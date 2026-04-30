@@ -1,0 +1,2 @@
+hard_violations,hard_penalty,safety_kg_min,safety_penalty,driver_window_min,driver_window_penalty,driver_rest_min,driver_rest_penalty,max_driving_min,max_driving_penalty,timing_min,timing_penalty,customer_window_min,customer_window_penalty,smoothness_penalty,total_soft_penalty,total_penalty
+0,0.0,6.139089236967266e-09,6.139089236967266e-09,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,4335.352384754227,4335.3523847603665,4335.3523847603665

@@ -1,0 +1,10 @@
+code,severity,shift,operation,point,message
+QS01,warning,,,70,"order 0 delivered 744.0, below nominal 930.0 but above flexible minimum"
+QS01,warning,,,136,"order 0 delivered 3603.553208402697, below nominal 4000.0 but above flexible minimum"
+QS01,warning,,,170,"order 0 delivered 405.52, below nominal 506.9 but above flexible minimum"
+QS01,warning,,,180,"order 0 delivered 2045.6230598797483, below nominal 2406.0 but above flexible minimum"
+QS01,warning,,,208,"order 0 delivered 5218.991135842516, below nominal 5898.07064000007 but above flexible minimum"
+QS01,warning,,,221,"order 0 delivered 3984.0, below nominal 4980.0 but above flexible minimum"
+QS01,warning,,,228,"order 0 delivered 1049.2176, below nominal 1311.522 but above flexible minimum"
+QS01,warning,,,238,"order 0 delivered 1831.9682559999842, below nominal 2289.96031999998 but above flexible minimum"
+QS01,warning,,,304,"order 0 delivered 1860.0, below nominal 2325.0 but above flexible minimum"

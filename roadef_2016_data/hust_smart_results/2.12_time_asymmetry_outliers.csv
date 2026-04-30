@@ -1,0 +1,11 @@
+origin,destination,origin_kind,destination_kind,distance,time,reverse_distance,reverse_time,distance_delta,time_delta,speed_distance_per_hour
+200,254,customer,customer,5.0,11,26.0,40,-21.0,-29,27.272727272727273
+254,200,customer,customer,26.0,40,5.0,11,21.0,29,39.0
+56,109,customer,customer,54.0,84,46.0,57,8.0,27,38.57142857142858
+56,266,customer,customer,54.0,84,46.0,57,8.0,27,38.57142857142858
+109,56,customer,customer,46.0,57,54.0,84,-8.0,-27,48.42105263157895
+266,56,customer,customer,46.0,57,54.0,84,-8.0,-27,48.42105263157895
+43,187,customer,customer,85.0,126,75.0,100,10.0,26,40.476190476190474
+187,43,customer,customer,75.0,100,85.0,126,-10.0,-26,45.0
+103,187,customer,customer,44.0,72,36.0,48,8.0,24,36.66666666666667
+177,187,customer,customer,44.0,72,36.0,48,8.0,24,36.66666666666667

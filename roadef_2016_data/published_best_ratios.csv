@@ -1,0 +1,43 @@
+phase,set,instance,file_hint,best_ratio,team,source_url,notes
+sprint,A,V_1.1,Instance_V_1.1_ConvertedTo_V2.xml,0.027773,S18,https://roadef.org/challenge/2016/en/sprintresult.php,
+sprint,A,V_1.2,Instance_V_1.2_ConvertedTo_V2.xml,0.027582,S18,https://roadef.org/challenge/2016/en/sprintresult.php,
+sprint,A,V_1.3,Instance_V_1.3_ConvertedTo_V2.xml,0.013279,S18,https://roadef.org/challenge/2016/en/sprintresult.php,
+sprint,A,V_1.4,Instance_V_1.4_ConvertedTo_V2.xml,0.018991,S18,https://roadef.org/challenge/2016/en/sprintresult.php,
+sprint,A,V_1.5,Instance_V_1.5_ConvertedTo_V2.xml,0.012184,S18,https://roadef.org/challenge/2016/en/sprintresult.php,
+sprint,A,V_1.6,Instance_V_1.6_ConvertedTo_V2.xml,0.013711,S18,https://roadef.org/challenge/2016/en/sprintresult.php,
+sprint,A,V_1.7,Instance_V_1.7_ConvertedTo_V2.xml,0.013737,S18,https://roadef.org/challenge/2016/en/sprintresult.php,
+sprint,A,V_1.8,Instance_V_1.8_ConvertedTo_V2.xml,0.007756,S18,https://roadef.org/challenge/2016/en/sprintresult.php,
+sprint,A,V_1.9,Instance_V_1.9_ConvertedTo_V2.xml,0.015330,S18,https://roadef.org/challenge/2016/en/sprintresult.php,
+sprint,A,V_1.10,Instance_V_1.10_ConvertedTo_V2.xml,0.020223,S18,https://roadef.org/challenge/2016/en/sprintresult.php,
+sprint,A,V_1.11,Instance_V_1.11_ConvertedTo_V2.xml,0.051900,J10,https://roadef.org/challenge/2016/en/sprintresult.php,
+qualification,A,V_1.1,Instance_V_1.1_ConvertedTo_V2.xml,0.027466,S17,https://roadef.org/challenge/2016/en/QualifResult.php,
+qualification,A,V_1.2,Instance_V_1.2_ConvertedTo_V2.xml,0.027304,S17,https://roadef.org/challenge/2016/en/QualifResult.php,
+qualification,A,V_1.3,Instance_V_1.3_ConvertedTo_V2.xml,0.013428,S17,https://roadef.org/challenge/2016/en/QualifResult.php,"Official page marks this with *: better value exists from sprint."
+qualification,A,V_1.4,Instance_V_1.4_ConvertedTo_V2.xml,0.015495,S17,https://roadef.org/challenge/2016/en/QualifResult.php,
+qualification,A,V_1.5,Instance_V_1.5_ConvertedTo_V2.xml,0.011877,S17,https://roadef.org/challenge/2016/en/QualifResult.php,
+qualification,A,V_1.6,Instance_V_1.6_ConvertedTo_V2.xml,0.012812,S17,https://roadef.org/challenge/2016/en/QualifResult.php,
+qualification,A,V_1.7,Instance_V_1.7_ConvertedTo_V2.xml,0.012890,S17,https://roadef.org/challenge/2016/en/QualifResult.php,
+qualification,A,V_1.8,Instance_V_1.8_ConvertedTo_V2.xml,0.007805,S17,https://roadef.org/challenge/2016/en/QualifResult.php,"Official page marks this with *: better value exists from sprint."
+qualification,A,V_1.9,Instance_V_1.9_ConvertedTo_V2.xml,0.015279,S17,https://roadef.org/challenge/2016/en/QualifResult.php,
+qualification,A,V_1.10,Instance_V_1.10_ConvertedTo_V2.xml,0.018941,S17,https://roadef.org/challenge/2016/en/QualifResult.php,
+qualification,A,V_1.11,Instance_V_1.11_ConvertedTo_V2.xml,0.028666,S17,https://roadef.org/challenge/2016/en/QualifResult.php,
+final,B,V_2.12,V2.12.xml,0.010024,S17,https://roadef.org/challenge/2016/en/finalResults.php,
+final,B,V_2.13,V2.13.xml,0.028875,S17,https://roadef.org/challenge/2016/en/finalResults.php,
+final,B,V_2.14,V2.14.xml,0.034971,S17,https://roadef.org/challenge/2016/en/finalResults.php,
+final,B,V_2.15,V2.15.xml,0.024993,S17,https://roadef.org/challenge/2016/en/finalResults.php,
+final,B,V_2.16,V2.16.2.xml,0.011783,S17,https://roadef.org/challenge/2016/en/finalResults.php,
+final,B,V_2.17,V2.17.xml,0.032130,S17,https://roadef.org/challenge/2016/en/finalResults.php,
+final,B,V_2.18,V2.18.xml,0.031882,S17,https://roadef.org/challenge/2016/en/finalResults.php,
+final,B,V_2.19,V2.19.xml,0.034022,S17,https://roadef.org/challenge/2016/en/finalResults.php,
+final,B,V_2.20,V2.20.2.xml,0.017486,S17,https://roadef.org/challenge/2016/en/finalResults.php,
+final,B,V_2.21,V2.21.2.xml,0.016806,S17,https://roadef.org/challenge/2016/en/finalResults.php,
+final,B,V_2.22,V2.22.xml,0.012667,S17,https://roadef.org/challenge/2016/en/finalResults.php,
+final,B,V_2.23,V2.23.xml,0.012603,S17,https://roadef.org/challenge/2016/en/finalResults.php,
+final,B,V_2.24,V2.24.xml,0.011219,S17,https://roadef.org/challenge/2016/en/finalResults.php,
+final,B,V_2.25,V2.25.xml,0.011451,S17,https://roadef.org/challenge/2016/en/finalResults.php,
+final,B,V_2.26,V2.26.xml,0.011281,S17,https://roadef.org/challenge/2016/en/finalResults.php,
+final,X,V_2.27,X1.xml,0.010042,S17,https://roadef.org/challenge/2016/en/finalResults.php,"Mapped from final-results table order: X1 corresponds to V_2.27."
+final,X,V_2.28,X2.xml,0.011799,S17,https://roadef.org/challenge/2016/en/finalResults.php,"Mapped from final-results table order: X2 corresponds to V_2.28."
+final,X,V_2.29,X3.xml,0.030760,S17,https://roadef.org/challenge/2016/en/finalResults.php,"Mapped from final-results table order: X3 corresponds to V_2.29."
+final,X,V_2.30,X4.xml,0.012633,S17,https://roadef.org/challenge/2016/en/finalResults.php,"Mapped from final-results table order: X4 corresponds to V_2.30."
+final,X,V_2.31,X5.xml,0.012965,S17,https://roadef.org/challenge/2016/en/finalResults.php,"Mapped from final-results table order: X5 corresponds to V_2.31."

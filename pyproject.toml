@@ -1,0 +1,31 @@
+[project]
+name = "roadef-2016-irp-tools"
+version = "0.1.0"
+description = "Tooling for ROADEF/EURO 2016 inventory routing analysis, replay, evaluation, and ALNS experiments."
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "alns>=7.0.0",
+    "matplotlib>=3.10.0",
+    "numpy>=1.26.0",
+    "scikit-learn>=1.8.0",
+    "scipy>=1.17.0",
+]
+
+[project.optional-dependencies]
+milp = [
+    "gurobipy>=12.0.0",
+]
+
+[project.scripts]
+roadef-tools = "roadef_tools.cli:main"
+
+[tool.uv]
+package = true
+
+[tool.hatch.build.targets.wheel]
+packages = ["roadef_tools"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"

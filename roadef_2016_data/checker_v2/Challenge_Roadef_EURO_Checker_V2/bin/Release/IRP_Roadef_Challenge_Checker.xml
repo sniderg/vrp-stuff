@@ -1,0 +1,872 @@
+<?xml version="1.0"?>
+<doc>
+    <assembly>
+        <name>IRP_Roadef_Challenge_Checker</name>
+    </assembly>
+    <members>
+        <member name="T:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance">
+            <summary>This class describes all the input data for one IRP_Roadef_Challenge_Instance.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance.name">
+            <summary>The name of the instance. </summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance.unit">
+            <summary>The duration of timesteps. This granularity is 
+            the one of production/consumption forecasts. </summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance.horizon">
+            <summary>The horizon (constant H in the mathematical model) 
+            gives the duration of the considered prevision period.
+            
+            All time-related inputs will be defined as Point within 
+            interval [0,horizon*unit[.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance.timeMatrices">
+            <summary>TIMEMATRIX(p,q) is the travelling time 
+            from p to q.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance.drivers">
+            <summary>The list of drivers. </summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance.trailers">
+            <summary>The list of trailers.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance.bases">
+            <summary>The list of bases.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance.sources">
+            <summary>The list of sources.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance.customers">
+            <summary>The list of customers.</summary>
+            
+        </member>
+        <member name="M:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance.getLatestTime">
+            <summary>Return the first minute outside of the schedule that is to say : (Horizon+1)*Unit.</summary>
+            
+            <returns>The last Minute of the shedule</returns>
+            
+        </member>
+        <member name="P:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance.DistMatrices">
+            <summary>DISTMATRIX(p,q) is the distance between 
+            Index p and q .</summary>
+            
+        </member>
+        <member name="T:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Bases">
+            <summary>A base is a starting and ending  point for shifts.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Bases.index">
+            <summary> The unique index for this point. 
+            This index is the index of the Point in the array that would 
+            be obtained by concatenation of bases,sources and customers arrays.</summary>
+            
+        </member>
+        <!-- Commentaire XML incorrect ignoré pour le membre "M:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Bases.getIndex" -->
+        <member name="T:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Customers">
+            <summary>A customer and its specific characteristics.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Customers.index">
+            <summary> The unique index for this point. 
+            This index is the index of the Point in the array that would 
+            be obtained by concatenation of bases,sources and customers arrays.</summary>
+            
+        </member>
+        <!-- Commentaire XML incorrect ignoré pour le membre "F:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Customers.LayoverCustomer" -->
+        <member name="F:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Customers.callIn">
+            <summary>1 if and only if unsolicited deliveries 
+            are forbidden for this customer that is to say that 
+            this customer will only issue orders. consequently
+             the attributes forecast, capacity, initialTankQuantity, 
+            safetyLevel and runoutCost are not relevant 
+            for these customersByRunoutDate.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Customers.orders">
+            <summary>A list of orders that is to say pairs with (quantity, time-window).
+             each pair represents a request for a delivery of quantity¸ 
+            taking place within the specified time-window. non-satisfaction 
+            of orders will be penalized in the objective function.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Customers.setupTime">
+            <summary>The fix part of load/delivery time as far as the Point 
+            (customer or source) is concerned (it is recommended to set this 
+            value to an average or median time computed for this customer).</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Customers.timewindows">
+            <summary>The set of availability intervals of Point p, each included 
+            in [0,T[. At most two per day. </summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Customers.allowedTrailers">
+            <summary>The set of trailers that are allowed to enter this site
+            (for instance because of available equipments).</summary>
+            
+        </member>
+        <member name="M:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Customers.#ctor">
+            <summary>
+            Default constructor.
+            </summary>
+        </member>
+        <!-- Commentaire XML incorrect ignoré pour le membre "M:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Customers.getIndex" -->
+        <member name="P:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Customers.Forecast">
+            <summary> the forecasted consumption or production of 
+            customer or source p during time step h.
+            for sources it is a negative value representing the 
+            production rate on each time step (max possible production). 
+            For each source it can take only two values: 0 
+            (for maintenance days) or the production rate.</summary>
+            
+        </member>
+        <member name="P:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Customers.Capacity">
+            <summary> tank capacity in mass for customer or source p. 
+            It is the maximum quantity of product that can be stored by 
+            the customer or source, regardless of the minimum quantity 
+            of product that must remain in the container and the part
+             of the container that must remain empty for pressure reasons.
+            for sources it represents storage capacity (finite).</summary>
+            
+        </member>
+        <!-- Commentaire XML incorrect ignoré pour le membre "P:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Customers.InitialTankQuantity" -->
+        <member name="P:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Customers.MinOperationQuantity">
+            <summary>
+            The minimum quantity to be delivered for each operation at this customer.
+            </summary>
+        </member>
+        <member name="P:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Customers.SafetyLevel">
+            <summary>Safety level in mass for Point p. this level is 
+            the one that will be considered in the objective function 
+            to size inventory shortages.</summary>
+            
+        </member>
+        <member name="T:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_driver">
+            <summary>Represents a driver with its characteristics. 
+            It can also represent a pair of drivers.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_driver.index">
+            <summary> The unique index for this resource.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_driver.minInterSHIFTDURATION">
+            <summary>
+             The minimum duration between two consecutive shifts assigned to a driver d. </summary>
+        </member>
+        <member name="F:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_driver.maxDrivingDuration">
+            <summary>The maximum driving duration for this driver, 
+            before getting a layover (e.g. 11 hours in the US).</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_driver.timewindows">
+            <summary>The set of availability intervals of this resource, 
+            each included in [0,T[. These intervals are not allowed to overlap.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_driver.trailer">
+            <summary>The list of trailers which can be driven by this driver.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_driver.LayoverDuration">
+            <summary>The  duration of layovers for this driver.
+            A layover is a period of time during which the driver can sleep. 
+            It refers to public int layovers (e.g. 10 hours in the us) and 
+            not to lunch breaks which are ignored in this model.</summary>
+            
+        </member>
+        <member name="P:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_driver.LayoverCost">
+            <summary>A fix cost for each layover of this driver. </summary>
+            
+        </member>
+        <member name="T:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Sources">
+            <summary>A source is a production site.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Sources.index">
+            <summary> The unique index for this point. 
+            This index is the index of the Point in the array that would 
+            be obtained by concatenation of bases,sources and customers arrays.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Sources.allowedTrailers">
+            <summary>The set of trailers that are allowed to enter this site
+            (for instance because of available equipments).</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Sources.setupTime">
+            <summary>The fix part of load/delivery time as far as the Point 
+            (customer or source) is concerned (it is recommended to set this 
+            value to an average or median time computed for this customer).</summary>
+            
+        </member>
+        <!-- Commentaire XML incorrect ignoré pour le membre "M:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Sources.getIndex" -->
+        <member name="T:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Trailers">
+            <summary>Trailers are gas containers.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Trailers.index">
+            <summary> The unique index for this resource.</summary>
+            
+        </member>
+        <member name="P:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Trailers.Capacity">
+            <summary>The capacity of this trailer in mass. That is to say the quantity 
+            of product that can be loaded in the trailer and delivered to customersByRunoutDate,
+             regardless of the minimum quantity of product that must remain in the container 
+            and the part of the container that must remain empty for pressure reasons. 
+            it is the usable capacity. </summary>
+            
+        </member>
+        <member name="P:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Trailers.InitialQuantity">
+            <summary>The mass of bulk in this trailer at the beginning of period [0,T[.
+             Must bepublic int to [0, capacity].</summary>
+            
+        </member>
+        <member name="P:Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Trailers.DistanceCost">
+            <summary>The cost per unit of distance.</summary>
+            
+        </member>
+        <member name="T:Roadef_Challenge.api.input.Order">
+            <summary>
+            Order for a customer.
+            </summary>
+        </member>
+        <member name="F:Roadef_Challenge.api.input.Order.earliestTime">
+            <summary>
+            The earliest time for the delivery to take place.
+            </summary>
+        </member>
+        <member name="F:Roadef_Challenge.api.input.Order.latestTime">
+            <summary>The latest time for the delivery to take place.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.input.Order.orderQuantityFlexibility">
+            <summary> 
+            The percentage (in base 100) of flexibility allowed to satisfy the order quantity.
+            Must be between 0 and 100.
+            </summary>
+        </member>
+        <member name="M:Roadef_Challenge.api.input.Order.ShallowCopy">
+            <summary>
+            Shallow copy of this order.
+            </summary>
+            <returns>A new object with same values for each field (NOT a deep copy).</returns>
+        </member>
+        <member name="M:Roadef_Challenge.api.input.Order.ToString">
+            <summary>
+            Printer.
+            </summary>
+            <returns>String representation of the order.</returns>
+        </member>
+        <member name="P:Roadef_Challenge.api.input.Order.Quantity">
+            <summary>
+            The quantity to be delivered to this client.
+            </summary>
+        </member>
+        <member name="P:Roadef_Challenge.api.input.Order.MinQuantityToSatisfy">
+            <summary>
+            Minimum quantity to deliver to satisfy this order.
+            </summary>
+        </member>
+        <member name="T:Roadef_Challenge.api.output.IRP_Roadef_Challenge_Operation_">
+            <summary>A loading or delivery operation.</summary>
+            
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.output.IRP_Roadef_Challenge_Operation_.point">
+            <summary>The index of the Point p where operation o takes place.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.output.IRP_Roadef_Challenge_Operation_.arrival">
+            <summary>The arrival time of operation o (in [0,T[).</summary>
+            
+        </member>
+        <member name="P:Roadef_Challenge.api.output.IRP_Roadef_Challenge_Operation_.Quantity">
+            <summary>The quantity to be delivered (negative for sources) in operation o.</summary>
+            
+        </member>
+        <member name="T:Roadef_Challenge.api.output.IRP_Roadef_Challenge_Output">
+            <summary>
+            A solution is a set of shifts.</summary>
+            
+        </member>
+        <member name="M:Roadef_Challenge.api.output.IRP_Roadef_Challenge_Output.getInventory(Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Customers,Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance)">
+            <summary>
+            Returns the output inventory for a site.</summary>
+            
+            <param name="site">The site.</param>
+            <param name="input">The input object.</param>
+            <returns>The site inventory.</returns>
+            
+        </member>
+        <member name="T:Roadef_Challenge.api.output.IRP_Roadef_Challenge_Output_">
+            <summary>
+            A solution of is a set of shifts.</summary>
+            
+        </member>
+        <member name="T:Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift">
+            <summary>A shift is a list of operations assigned to a vehicle.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift.index">
+            <summary>The index of this shift in the shifts array in the output object.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift.driver">
+            <summary>The driver for this shift (identified by its index).</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift.trailer">
+            <summary>The trailer for this shift(identified by its index).</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift.start">
+            <summary>The starting time for the this shift (in [0,T[).</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift.end">
+            <summary>Ending time for the shift (can differ by a few minutes from arrival(s)
+             because of checking tasks taking place at the base). In [0,T[.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift.operations">
+            <summary>List of operations</summary>
+            
+        </member>
+        <member name="M:Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift.getCost">
+            <summary>Return the total cost of this shift (sum of all cost variables).</summary>		
+            <returns>Total cost of this shift.</returns>
+            
+        </member>
+        <member name="P:Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift.StartTrailerQuantity">
+            <summary>The quantity of bulk in the trailer at the beginning of the this shift.</summary>
+            
+        </member>
+        <member name="P:Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift.EndTrailerQuantity">
+            <summary>The quantity of bulk in the trailer at the end of the this shift.</summary>
+            
+        </member>
+        <member name="P:Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift.DistanceCosts">
+            <summary>Distance costs for this shift</summary>
+            
+        </member>
+        <member name="P:Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift.TimeCosts">
+            <summary>Time costs for this shift.</summary>
+            
+        </member>
+        <member name="P:Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift.LayoverCosts">
+            <summary>Layover costs for this shift.</summary>
+            
+        </member>
+        <member name="T:Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift_">
+            <summary>A shift is a list of operations assigned to a vehicle.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift_.index">
+            <summary>The index of this shift in the shifts array in the output object.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift_.driver">
+            <summary>The driver for this shift (identified by its index).</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift_.trailer">
+            <summary>The trailer for this shift(identified by its index).</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift_.start">
+            <summary>The starting time for the this shift (in [0,T[).</summary>
+            
+        </member>
+        <member name="T:Roadef_Challenge.api.output.IRP_Roadef_Challenge_SiteInventory">
+            <summary>Evolution of the quantity of bulk in the tank of the specified site.</summary>
+            
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.output.IRP_Roadef_Challenge_SiteInventory.site">
+            <summary>The index of the site.</summary>
+            
+        </member>
+        <member name="M:Roadef_Challenge.api.output.IRP_Roadef_Challenge_SiteInventory.#ctor(System.Int32,System.Int32)">
+            <summary>Create an inventory for the given site, over the specified horizon.</summary>
+            
+            <param name="site">The index of a site</param>
+            <param name="horizon">The number of time steps (hence the length of the tankQuantity array to be allocated)</param>
+            
+        </member>
+        <member name="M:Roadef_Challenge.api.output.IRP_Roadef_Challenge_SiteInventory.#ctor">
+            <summary>Empty constructor.</summary>
+            
+        </member>
+        <member name="P:Roadef_Challenge.api.output.IRP_Roadef_Challenge_SiteInventory.TankQuantity">
+            <summary>Quantity of product in the tank at the end of each period.</summary>
+            
+        </member>
+        <member name="T:Roadef_Challenge.api.input.TimeWindow">
+            <summary>Time interval.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.input.TimeWindow.start">
+            <summary>Start time of the interval (included).</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.input.TimeWindow.end">
+            <summary>End time of the interval (excluded).</summary>
+            
+        </member>
+        <member name="M:Roadef_Challenge.api.input.TimeWindow.#ctor">
+            <summary>We need a constructor without parameter in order to allow serialization.</summary>
+            
+        </member>
+        <member name="M:Roadef_Challenge.api.input.TimeWindow.#ctor(System.Int32,System.Int32)">
+            <summary> We offer a constructor with natural parameters in order to simplify object creation.</summary>
+            
+        </member>
+        <member name="M:Roadef_Challenge.api.input.TimeWindow.ToString">
+            <summary>Printer.</summary>
+            
+            <returns>Time Window reprensation.</returns>
+            
+        </member>
+        <member name="T:Roadef_Challenge.api.output.Operation">
+            <summary>A loading or delivery operation.</summary>
+            
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.output.Operation.index">
+            <summary>
+            Unique identifier of the operation.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.output.Operation.point">
+            <summary>The index of the Point p where operation o takes place.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.output.Operation.arrival">
+            <summary>The arrival time of operation o (in [0,T[).</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.output.Operation.cumulatedDrivingTime">
+            <summary>The cumulated driving time between the last layover and operation o..</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.output.Operation.departure">
+            <summary>A departure time from point(o) after operation o(in [0,T[).</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.api.output.Operation.TrailerQuantity">
+            <summary>The quantity of bulk in the trailer after performing this operation.</summary>
+            
+        </member>
+        <!-- Commentaire XML incorrect ignoré pour le membre "F:Roadef_Challenge.api.output.Operation.layoverbefore" -->
+        <!-- Commentaire XML incorrect ignoré pour le membre "F:Roadef_Challenge.api.output.Operation.drivingtimebeforelayover" -->
+        <member name="P:Roadef_Challenge.api.output.Operation.Quantity">
+            <summary>The quantity to be delivered (negative for sources) in operation o.</summary>
+            
+            
+        </member>
+        <member name="T:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker">
+            <summary>
+            Checks an Output file to detect non coherent results.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.input">
+            <summary>
+            Input file related to this output file.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.output">
+            <summary>
+            Output file to check.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.inputFilename">
+            <summary>
+            Input File name associated to this output file to check.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.instanceName">
+            <summary>
+            Input File name associated to this output file to check.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.outputFilename">
+            <summary>
+            Output File name of an output data to check.</summary>
+            
+        </member>
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.#ctor(System.String,System.String)">
+            <summary>
+            Check all data structures from an input files.</summary>
+            
+            <param name="inputFilename">Input File name associated to this output file to check.</param>
+            <param name="outputFilename">Output File name of an output data to check.</param>
+            
+        </member>
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.#ctor(Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance,Roadef_Challenge.api.output.IRP_Roadef_Challenge_Output)">
+            <summary>
+            Check all data structures from an IRP_Roadef_Challenge_Output.</summary>
+            
+        </member>
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.#ctor(Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance,Roadef_Challenge.api.output.IRP_Roadef_Challenge_Output_)">
+             <summary>
+             Check all data structures from an IRP_Roadef_Challenge_Output.</summary>
+            
+        </member>
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.checkAllOutputData">
+            <summary>
+            Performs a complete check of all data structures.</summary>
+            
+            <return>True if well-formed.</return>
+            
+        </member>
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.checkLayovers">
+            <summary>
+            For each shifts with layover of the output file, check all constraints related to layover.</summary>
+            
+            <returns>True if all shifts are OK.</returns>
+            
+        </member>
+        <!-- Commentaire XML incorrect ignoré pour le membre "M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.checkLAY02(Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift,System.Int32)" -->
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.checkLAY03(Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift,System.Int32)">
+            <summary>
+            [ LAY03 : Only one layover per shift is allowed ].</summary>
+            
+            <param name="shift">Checked Shift.</param>
+            <param name="indexShift">Shift index.</param> 
+            
+            <returns>True if SHI03 are OK.</returns>
+            
+        </member>
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.checkShifts">
+            <summary>
+            For each shifts of the output file, check all constraints.</summary>
+            
+            <returns>True if all shifts are OK.</returns>
+            
+        </member>
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.checkSHI02(Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift,System.Int32,Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_driver)">
+            <summary>
+            [ SHI02 : Arrival at a point requires traveling from the previous point to this point ]
+            Notes that we use inequalities in order to allow waiting time between the end of 
+            travel and arrival(o) which represents the actual entry in the site (that can be 
+            delayed because of opening hours).</summary>
+            
+            <param name="shift">Checked Shift.</param>
+            <param name="indexShift">Shift index.</param>
+            
+            <returns>True if SHI02 are OK.</returns>
+            
+        </member>
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.checkSHI03(Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift,System.Int32)">
+            <summary>
+            [ SHI03 : Loading and delivery operations take a constant time ].</summary>
+            
+            <param name="shift">Checked Shift.</param>
+            <param name="indexShift">Shift index.</param> 
+            
+            <returns>True if SHI03 are OK.</returns>
+            
+        </member>
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.checkSHI04(Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift,System.Int32)">
+            <summary>
+            [ SHI04 : delivery operations are performed 
+            during opening hours customers ] : 
+            For all Operations, the interval [arrival(o),departure(o)] must 
+            be fully included in one of the opening time-windows of the site.</summary>
+            
+            <param name="shift">Checked Shift.</param>
+            <param name="indexShift">Shift index.</param> 
+            
+            <returns>True if SHI04 are OK.</returns>
+            
+        </member>
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.checkSHI05(Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift,System.Int32,Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Trailers)">
+            <summary>
+            [ SHI05 : Loading and delivery operations require 
+            the site to be accessible for the vehicle ] : 
+            The drivers must be allowed on this site.</summary>
+            
+            <param name="shift">Checked Shift.</param>
+            <param name="indexShift">Shift index.</param> 
+            <param name="shiftTrailer">Trailer of the Shift.</param>
+            
+            <returns>True if SHI05 are OK.</returns>
+            
+        </member>
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.checkSHI06SHI07">
+            <summary>
+            [ SHI06 : The trailerQuantity cannot be negative 
+            or exceed capacity of the trailer ].
+            
+            [ SHI07 : The initial quantity of a trailer on a shift
+            is the end quantity on the previous shift of the trailer ].</summary> 
+            
+            <returns>True if SHI06 and SHI07 are OK.</returns>
+            
+        </member>
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.checkSHI11(Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift,System.Int32)">
+            <summary>
+            [ SHI11 ] The quantity delivered at a customer must be positive 
+            and the quantity loaded at a source must be positive too. This 
+            implies that the sign of the quantity must be positive for a 
+            customer and negative for a source.</summary>
+            
+            <param name="shift">Checked Shift.</param>
+            <param name="indexShift">Shift index.</param> 
+            
+            <returns>True if SHI11 are OK.</returns>
+            
+        </member>
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.checkSHI16(Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift,System.Int32)">
+            <summary>
+            [SHI16| Capacity at the customer's site]
+            For each delivery operation o in a shift s, the delivered quantity must be smaller than the customer tank capacity.
+            </summary>
+            <param name="shift">Checked Shift.</param>
+            <param name="indexShift">Shift index.</param> 
+            
+            <returns>True if SHI16 is OK.</returns>
+        </member>
+        <!-- Commentaire XML incorrect ignoré pour le membre "M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.checkSites" -->
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.checkResources">
+            <summary>
+            For each resources of the output file, check all constraints.</summary>
+            
+            <returns>True if all resources are OK.</returns>
+            
+        </member>
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.checkDR01(Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift,System.Int32,Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_driver,System.Int32)">
+            <summary>
+            [ DR01 : Shifts separation ] :  For each driver d, two consecutive shifts assigned to d 
+            must be separated by a delay of minInterSHIFTDURATION(d). </summary>
+            
+            <param name="shift">Checked Shift.</param>
+            <param name="indexShift">Shift index.</param> 
+            <param name="shiftDriver">Driver of the shift.</param>
+            <param name="endOfLastShift">End of the last shift of this driver.</param>
+            
+        </member>
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.checkDR03(Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift,System.Int32,Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_driver)">
+            <summary>
+            [ DR03 : Respect of maximal driving time ] : For each shift s and operation o 
+            (including the final fake operation), the cumulated driving time is either the 
+            one of the previous point plus travel time from this point, or the travel time since 
+            the last layover if layovers have been taken since last point.</summary>
+            
+            <param name="shift">Checked Shift.</param>
+            <param name="indexShift">Shift index.</param> 
+            <param name="shiftBase">Base of the shift.</param> 
+            <param name="shiftTractor">Tractor of the shift.</param> 
+            <param name="shiftDriver">Driver of the shift.</param> 
+            
+        </member>
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.checkDR08(Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift,System.Int32,Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_driver)">
+            <summary>
+            [ DR08 : Time windows of the drivers ] : For each shift s, 
+            the full [start(s),end(s)] interval must fit in one 
+            of the time-windows of the drivers.</summary>
+            
+            <param name="shift">Checked Shift.</param>
+            <param name="indexShift">Shift index.</param> 
+            <param name="shiftDriver">Driver of the shift.</param>
+            
+        </member>
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.checkTL01(Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift,System.Int32,Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Trailers,System.Int32)">
+            <summary>
+            [ TL01 : Different shifts of the same trailer cannot overlap in time ] :  
+            For each trailer, if we consider two shifts s1 and s2 performed by
+            this trailer, either s1 ends before the start of s2 or s2
+            ends before the start of s1.</summary>
+            
+            <param name="shift">Checked Shift.</param>
+            <param name="indexShift">Shift index.</param>  
+            <param name="shiftTrailer">Trailer of this shift.</param>  
+            <param name="endOfLastShift">End of lastShift of this trailer.</param> 
+            
+        </member>
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.checkTL03(Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift,System.Int32,Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_driver,Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Trailers)">
+            <summary>
+            [ TL03 : The trailer attached to a driver in a shift must be compatible ] :  
+            For each shift s, the assigned trailer must the trailer that can be drive by the driver.</summary>
+            
+            <param name="shift">Checked Shift.</param>
+            <param name="indexShift">Shift index.</param>  
+            <param name="shiftTractor">driver of this shift.</param>  
+            <param name="shiftTrailer">Trailer of this shift.</param>  
+            
+        </member>
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.checkServiceQuality">
+            <summary>
+            Check runout.</summary>
+            
+            <returns>True if we don't have  runout.</returns>
+            
+        </member>
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.checkQS01">
+            <summary>
+            [ QS01 : Orders satisfaction ] :  
+            All the orders having a time windows ending before the planning horizon
+            should be satisfied.</summary>
+            
+        </member>
+        <!-- Commentaire XML incorrect ignoré pour le membre "M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.checkQS02" -->
+        <!-- Commentaire XML incorrect ignoré pour le membre "M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.checkQS03" -->
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.subcheckQS03(Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift,System.Int32)">
+            <summary>
+            [ subcheckQS03 : Each operation on a call-in customer should be related to an order, 
+            meaning no operations are possible if there is any related order.</summary>
+            <param name="shift">Checked Shift.</param>
+            <param name="indexShift">Shift index.</param>        
+            <returns>True if subcheckQS03 are OK.</returns>
+            
+        </member>
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.checkCosts">
+            <summary>
+            Check all costs.</summary>
+            
+            <returns>True if all costs are OK.</returns>
+            
+        </member>
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.computeCosts(Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance,Roadef_Challenge.api.output.IRP_Roadef_Challenge_Output)">
+            <summary>
+            Compute all costs for shifts ending before the given time.</summary>
+            
+        </member>
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.getDriver(Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift,Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_driver@)">
+            <summary>
+            Get the driver of a shift and check if everything is OK.</summary>
+            
+            <param name="shift">The shift.</param>
+            <param name="shiftDriver">The shift driver to assign.</param>
+            
+            <returns>True if shiftDriver has been correctly assigned.</returns>
+            
+        </member>
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.getTrailer(Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift,Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance_Trailers@)">
+            <summary>
+            Get the trailer of a shift and check if everything is OK.</summary>
+            
+            <param name="shift">The shift.</param>
+            <param name="shiftTrailer">The shift trailer to assign.</param>
+            
+            <returns>True if shiftTrailer has been correctly assigned.</returns>
+            
+        </member>
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.getPrevTrailerShift(Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift)">
+            <summary>
+            Return the previous shift for this trailer (if any)
+            </summary>
+            <param name="shift">A shift.</param>
+            <returns>The previous shift if any, null otherwise.</returns>
+        </member>
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.getNextTrailerShift(Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift)">
+            <summary>
+            Return the next shift for this trailer (if any)
+            </summary>
+            <param name="shift">A shift.</param>
+            <returns>The next shift if any, null otherwise.</returns>
+        </member>
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.shifts_performed_by_each_trailer(Roadef_Challenge.api.output.IRP_Roadef_Challenge_Shift_[])">
+            <summary>
+            Return the ranking matrix of shifts performed by each trailer
+            </summary>
+            <param name="shift">A shifts[].</param>
+            <returns>matrix of shifts performed by each trailer.</returns>
+        </member>
+        <!-- Commentaire XML incorrect ignoré pour le membre "M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.Main(System.String[])" -->
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.ReadAndRun">
+            <summary>
+            Perform the checking.</summary>
+            
+        </member>
+        <member name="M:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.runOutputChecker(Roadef_Challenge.api.input.IRP_Roadef_Challenge_Instance,Roadef_Challenge.api.output.IRP_Roadef_Challenge_Output_)">
+            <summary>
+            Check a IRP_Roadef_Challenge_Output object.</summary>
+            
+            <param name="IRP_Roadef_Challenge_Instance">IRP_Roadef_Challenge_Instance linked to the IRP_Roadef_Challenge_Output.</param>
+            <param name="IRP_Roadef_Challenge_Output">IRP_Roadef_Challenge_Output to check.</param>
+            
+            <returns>True if the ouput is valid.</returns>
+            
+        </member>
+        <member name="P:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.NbMinutesRunoutsHorizon">
+            <summary>
+            The number of minutes for planning.</summary>
+            
+        </member>
+        <member name="P:Roadef_Challenge.checker.IRP_Roadef_Challenge_Checker.NbMinutesMissedOrdersHorizon">
+            <summary>
+            The number of minutes for planning.</summary>
+            
+        </member>
+        <member name="F:Roadef_Challenge.util.Floating.EPSILON">
+             <summary>
+             The epsilon used for floating-point numbers comparisons.</summary>
+            
+        </member>
+        <member name="M:Roadef_Challenge.util.Floating.Equal(System.Double,System.Double)">
+            <summary>
+            Returns true if the doubles a and b are equal.</summary>
+            
+            <param name="a">First double to compare.</param>
+            <param name="b">Second double to compare.</param>
+            
+            <returns>True if the two double are equal, 
+            false otherwise.</returns>
+            
+        </member>
+        <member name="M:Roadef_Challenge.util.Floating.Lower(System.Double,System.Double)">
+            <summary>
+            Returns true if the double a is lower or equal 
+            than the double b (that is, lower than b+epsilon).</summary>
+            
+            <param name="a">First double to compare.</param>
+            <param name="b">Second double to compare.</param>
+            
+            <returns>True if the double a is lower 
+            than the double b, false otherwise.</returns>
+            
+        </member>
+        <member name="M:Roadef_Challenge.util.Floating.Greater(System.Double,System.Double)">
+            <summary>
+            Returns true if the double a is greater or equal
+            than the double b (that is, greater than b-epsilon).</summary>
+            
+            <param name="a">First double to compare.</param>
+            <param name="b">Second double to compare.</param>
+            
+            <returns>True if the double a is greater 
+            than the double b, false otherwise.</returns>
+            
+        </member>
+        <member name="M:Roadef_Challenge.util.Floating.StrictlyNegative(System.Double)">
+            <summary>
+            Returns true if the double a is strictly negative.</summary>
+            
+            <param name="a">The double to compare.</param>		
+            
+            <returns>True if the double a is strictly negative.</returns>
+            
+        </member>
+        <member name="M:Roadef_Challenge.util.Floating.StrictlyPositive(System.Double)">
+            <summary>
+            Returns true if the double a is strictly positive.</summary>
+            
+            <param name="a">The double to compare.</param>		
+            
+            <returns>True if the double a is strictly positive.</returns>
+            
+        </member>
+    </members>
+</doc>

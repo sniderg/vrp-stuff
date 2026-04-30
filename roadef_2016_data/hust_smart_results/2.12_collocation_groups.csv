@@ -1,0 +1,63 @@
+group_id,size,points,kinds
+0,2,3 88,customer customer
+1,2,4 136,customer customer
+2,8,5 32 67 126 269 302 311 324,customer customer customer customer customer customer customer customer
+3,2,10 167,customer customer
+4,3,11 247 264,customer customer customer
+5,2,16 194,customer customer
+6,3,21 130 221,customer customer customer
+7,2,27 150,customer customer
+8,2,31 198,customer customer
+9,2,34 270,customer customer
+10,2,37 215,customer customer
+11,2,38 125,customer customer
+12,3,41 55 139,customer customer customer
+13,2,44 244,customer customer
+14,2,46 151,customer customer
+15,2,47 62,customer customer
+16,2,48 108,customer customer
+17,3,49 124 314,customer customer customer
+18,2,50 230,customer customer
+19,3,51 74 132,customer customer customer
+20,3,52 208 299,customer customer customer
+21,2,58 154,customer customer
+22,3,59 185 192,customer customer customer
+23,2,64 294,customer customer
+24,2,65 218,customer customer
+25,2,66 149,customer customer
+26,2,71 233,customer customer
+27,3,78 243 291,customer customer customer
+28,2,86 278,customer customer
+29,2,91 179,customer customer
+30,2,92 318,customer customer
+31,2,93 321,customer customer
+32,2,94 309,customer customer
+33,2,96 320,customer customer
+34,3,98 148 315,customer customer customer
+35,3,103 177 316,customer customer customer
+36,2,107 282,customer customer
+37,2,109 266,customer customer
+38,2,110 260,customer customer
+39,2,127 268,customer customer
+40,2,128 295,customer customer
+41,2,131 272,customer customer
+42,2,133 289,customer customer
+43,2,138 237,customer customer
+44,2,144 189,customer customer
+45,2,157 210,customer customer
+46,3,158 209 292,customer customer customer
+47,2,160 166,customer customer
+48,3,165 242 274,customer customer customer
+49,2,171 258,customer customer
+50,2,174 219,customer customer
+51,2,178 298,customer customer
+52,2,180 304,customer customer
+53,2,193 238,customer customer
+54,2,195 305,customer customer
+55,2,196 279,customer customer
+56,2,202 232,customer customer
+57,2,205 231,customer customer
+58,2,220 224,customer customer
+59,2,241 297,customer customer
+60,2,253 261,customer customer
+61,2,256 273,customer customer

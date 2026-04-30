@@ -1,0 +1,21 @@
+instance,instance_file,solution_file,checker_ratio,hust_expected_ratio,hust_delta,official_best_ratio,official_delta
+2.12,roadef_2016_data/set_B/Instances_B_V25-11042016/V2.12.xml,roadef_2016_data/hust_smart_results/ROADEF2016-IRP-Results-master/2.12_0.xml,0.0119500000,0.0119500783,-0.0000000783,0.0100240000,0.0019260000
+2.13,roadef_2016_data/set_B/Instances_B_V25-11042016/V2.13.xml,roadef_2016_data/hust_smart_results/ROADEF2016-IRP-Results-master/2.13_0.xml,0.0333970000,0.0333969734,0.0000000266,0.0288750000,0.0045220000
+2.14,roadef_2016_data/set_B/Instances_B_V25-11042016/V2.14.xml,roadef_2016_data/hust_smart_results/ROADEF2016-IRP-Results-master/2.14_0.xml,0.0413470000,0.0413467827,0.0000002173,0.0349710000,0.0063760000
+2.15,roadef_2016_data/set_B/Instances_B_V25-11042016/V2.15.xml,roadef_2016_data/hust_smart_results/ROADEF2016-IRP-Results-master/2.15_0.xml,0.0318060000,0.0318059345,0.0000000655,0.0249930000,0.0068130000
+2.16,roadef_2016_data/set_B/Instances_B_V25-11042016/V2.16.2.xml,roadef_2016_data/hust_smart_results/ROADEF2016-IRP-Results-master/2.16_0.xml,0.0168040000,0.0168039645,0.0000000355,0.0117830000,0.0050210000
+2.17,roadef_2016_data/set_B/Instances_B_V25-11042016/V2.17.xml,roadef_2016_data/hust_smart_results/ROADEF2016-IRP-Results-master/2.17_0.xml,0.0421000000,0.0420995540,0.0000004460,0.0321300000,0.0099700000
+2.18,roadef_2016_data/set_B/Instances_B_V25-11042016/V2.18.xml,roadef_2016_data/hust_smart_results/ROADEF2016-IRP-Results-master/2.18_0.xml,0.0417750000,0.0417745616,0.0000004384,0.0318820000,0.0098930000
+2.19,roadef_2016_data/set_B/Instances_B_V25-11042016/V2.19.xml,roadef_2016_data/hust_smart_results/ROADEF2016-IRP-Results-master/2.19_0.xml,0.0417310000,0.0417313160,-0.0000003160,0.0340220000,0.0077090000
+2.20,roadef_2016_data/set_B/Instances_B_V25-11042016/V2.20.2.xml,roadef_2016_data/hust_smart_results/ROADEF2016-IRP-Results-master/2.20_0.xml,0.0183840000,0.0183843337,-0.0000003337,0.0174860000,0.0008980000
+2.21,roadef_2016_data/set_B/Instances_B_V25-11042016/V2.21.2.xml,roadef_2016_data/hust_smart_results/ROADEF2016-IRP-Results-master/2.21_0.xml,0.0180100000,0.0180102328,-0.0000002328,0.0168060000,0.0012040000
+2.22,roadef_2016_data/set_B/Instances_B_V25-11042016/V2.22.xml,roadef_2016_data/hust_smart_results/ROADEF2016-IRP-Results-master/2.22_0.xml,0.0132840000,0.0132835322,0.0000004678,0.0126670000,0.0006170000
+2.23,roadef_2016_data/set_B/Instances_B_V25-11042016/V2.23.xml,roadef_2016_data/hust_smart_results/ROADEF2016-IRP-Results-master/2.23_0.xml,0.0132050000,0.0132047178,0.0000002822,0.0126030000,0.0006020000
+2.24,roadef_2016_data/set_B/Instances_B_V25-11042016/V2.24.xml,roadef_2016_data/hust_smart_results/ROADEF2016-IRP-Results-master/2.24_0.xml,0.0129660000,0.0129660974,-0.0000000974,0.0112190000,0.0017470000
+2.25,roadef_2016_data/set_B/Instances_B_V25-11042016/V2.25.xml,roadef_2016_data/hust_smart_results/ROADEF2016-IRP-Results-master/2.25_0.xml,0.0133950000,0.0133953519,-0.0000003519,0.0114510000,0.0019440000
+2.26,roadef_2016_data/set_B/Instances_B_V25-11042016/V2.26.xml,roadef_2016_data/hust_smart_results/ROADEF2016-IRP-Results-master/2.26_0.xml,0.0131910000,0.0131908460,0.0000001540,0.0112810000,0.0019100000
+2.27,roadef_2016_data/set_X/Instances X/X1.xml,roadef_2016_data/hust_smart_results/ROADEF2016-IRP-Results-master/2.27_0.xml,0.0113080000,0.0113080809,-0.0000000809,0.0100420000,0.0012660000
+2.28,roadef_2016_data/set_X/Instances X/X2.xml,roadef_2016_data/hust_smart_results/ROADEF2016-IRP-Results-master/2.28_0.xml,0.0164300000,0.0164296356,0.0000003644,0.0117990000,0.0046310000
+2.29,roadef_2016_data/set_X/Instances X/X3.xml,roadef_2016_data/hust_smart_results/ROADEF2016-IRP-Results-master/2.29_0.xml,0.0392540000,0.0392544722,-0.0000004722,0.0307600000,0.0084940000
+2.30,roadef_2016_data/set_X/Instances X/X4.xml,roadef_2016_data/hust_smart_results/ROADEF2016-IRP-Results-master/2.30_0.xml,0.0139880000,0.0139875958,0.0000004042,0.0126330000,0.0013550000
+2.31,roadef_2016_data/set_X/Instances X/X5.xml,roadef_2016_data/hust_smart_results/ROADEF2016-IRP-Results-master/2.31_0.xml,0.0137990000,0.0137987215,0.0000002785,0.0129650000,0.0008340000

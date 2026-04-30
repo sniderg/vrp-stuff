@@ -1,0 +1,22 @@
+time,shift,driver,trailer,kind,point,origin,destination,fraction_complete,remaining_minutes,trailer_quantity,driving_since_layover,message
+1200,,,1,idle_trailer,0,,,,,0.0,,trailer not active in a shift
+1200,,,2,idle_trailer,0,,,,,4857.14305987975,,trailer not active in a shift
+1200,,,4,idle_trailer,0,,,,,20076.1913141696,,trailer not active in a shift
+1200,,,5,idle_trailer,0,,,,,95.2381493012663,,trailer not active in a shift
+1200,,,10,idle_trailer,0,,,,,19145.2388943594,,trailer not active in a shift
+1200,,,11,idle_trailer,0,,,,,21290.4770791396,,trailer not active in a shift
+1200,,,12,idle_trailer,0,,,,,220.476606373704,,trailer not active in a shift
+1200,,,14,idle_trailer,0,,,,,4857.14305987975,,trailer not active in a shift
+1200,0,1,9,layover,1,1,,,323,21484.7628015348,226,layover at/after point 1; 323 min remaining
+1200,4,3,13,layover,172,172,,,278,7921.067609011375,194,layover at/after point 172; 278 min remaining
+1200,3,8,0,layover,1,1,,,356,7123.80982115697,221,layover at/after point 1; 356 min remaining
+1200,,0,,off_shift,0,,,,,,0,driver not active in a shift
+1200,,4,,off_shift,0,,,,,,0,driver not active in a shift
+1200,,6,,off_shift,0,,,,,,0,driver not active in a shift
+1200,,7,,off_shift,0,,,,,,0,driver not active in a shift
+1200,,9,,off_shift,0,,,,,,0,driver not active in a shift
+1200,,12,,off_shift,0,,,,,,0,driver not active in a shift
+1200,10,2,3,service,205,,,,28,23528.772825688065,302,service at point 205; quantity 3623.809637
+1200,8,5,8,service,171,,,,46,15640.000652812829,291,service at point 171; quantity 20400.000851
+1200,1,10,7,service,291,,,,22,13812.200946683348,478,service at point 291; quantity 5040.000000
+1200,9,11,6,travel,,137,299,0.7982456140350878,23,12126.768548934117,321,travel 137->299; 0.798 complete; 23 min remaining

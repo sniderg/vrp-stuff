@@ -1,0 +1,9 @@
+probe,valid,ratio,first_rule_message,solution_xml,description
+customer_window_exact_latest_arrival,True,0.011950,,roadef_2016_data/edge_case_probes/customer_window_exact_latest_arrival.xml,Set customer arrival to latest minute where arrival+setup still fits the window.
+customer_window_1_min_late,False,,[ SHI04 : checkShifts ] : operation[2] of shift[17] is out of the timewindows of site[197] ==> 2611 (operationStart) -> 2641 (operationEnd).,roadef_2016_data/edge_case_probes/customer_window_1_min_late.xml,Set customer arrival one minute past the latest window-feasible arrival.
+travel_exact_earliest_arrival,True,0.011950,,roadef_2016_data/edge_case_probes/travel_exact_earliest_arrival.xml,Set operation arrival exactly to previous departure plus travel time.
+travel_1_min_too_early,False,,[ SHI02 : checkShifts ] : 'arrival' at point[168] in shift[0] occurs too early : 130 (arrival) < 0 (departure) + 131 (travelTime)0 (layover duration).,roadef_2016_data/edge_case_probes/travel_1_min_too_early.xml,Set operation arrival one minute before previous departure plus travel time.
+safety_exact_threshold,True,0.011950,,roadef_2016_data/edge_case_probes/safety_exact_threshold.xml,Reduce a VMI delivery so the customer's minimum tank level lands at the safety threshold.
+safety_0_1_kg_under,False,,[ check  TotalRunOut  ] :Total runout number 1,roadef_2016_data/edge_case_probes/safety_0_1_kg_under.xml,Reduce a VMI delivery so the customer's minimum tank level is about 0.1 kg below safety.
+capacity_exact_threshold,True,0.011950,,roadef_2016_data/edge_case_probes/capacity_exact_threshold.xml,Increase a VMI delivery so the customer's post-step tank level lands at capacity.
+capacity_0_1_kg_over,False,,[ DYN01 : checkSites ] : SiteInventory[160] not respected at step[124] : 3615.1 (tankQuantity) > 3615.,roadef_2016_data/edge_case_probes/capacity_0_1_kg_over.xml,Increase a VMI delivery so the customer's post-step tank level is about 0.1 kg over capacity.
