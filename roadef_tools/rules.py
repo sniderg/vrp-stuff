@@ -130,6 +130,25 @@ def validate_solution(instance: Instance, solution: Solution) -> list[RuleViolat
     return violations
 
 
+def is_time_window_valid(arrival: int, departure: int, windows: tuple[TimeWindow, ...]) -> bool:
+    """Check if a service interval is within any of the provided time windows."""
+    return any(window.start <= arrival and departure <= window.end for window in windows)
+
+
+def is_trailer_allowed(instance: Instance, point: int, trailer: int) -> bool:
+    """Check if a trailer is allowed at a given point (source or customer)."""
+    if point in instance.source_by_point:
+        return trailer in instance.source_by_point[point].allowed_trailers
+    if point in instance.customer_by_point:
+        return trailer in instance.customer_by_point[point].allowed_trailers
+    return True
+
+
+def is_driving_duration_valid(driver: Driver, duration: int) -> bool:
+    """Check if a driving duration is within the driver's maximum allowed."""
+    return duration <= driver.max_driving_duration
+
+
 def _violation(
     code: str,
     message: str,
@@ -240,7 +259,7 @@ def _validate_shift_operations(
             point_kind = instance.point_kind(operation.point)
             if point_kind == "customer":
                 customer = instance.customer_by_point[operation.point]
-                if not _within_any_window(
+                if not is_time_window_valid(
                     derived_op.arrival,
                     derived_op.departure,
                     customer.time_windows,
@@ -393,7 +412,7 @@ def _validate_resource_constraints(
                     shift=shift.index,
                 )
             )
-        if not _within_any_window(shift.start, derived.end, driver.time_windows):
+        if not is_time_window_valid(shift.start, derived.end, driver.time_windows):
             violations.append(
                 _violation(
                     "DRI08",
@@ -492,5 +511,4 @@ def _validate_tank_bounds(instance: Instance, solution: Solution) -> list[RuleVi
     return violations
 
 
-def _within_any_window(start: int, end: int, windows: tuple) -> bool:
-    return any(window.start <= start and end <= window.end for window in windows)
+# Atomic checks exposed for solver use

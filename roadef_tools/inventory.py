@@ -57,21 +57,27 @@ def tank_events(instance: Instance, solution: Solution) -> list[TankEvent]:
     events: list[TankEvent] = []
 
     for customer in instance.customers:
-        events.extend(_customer_tank_events(instance, customer, deliveries_by_arrival))
+        events.extend(
+            project_customer_inventory(
+                instance,
+                customer,
+                deliveries_by_arrival.get(customer.index, {}),
+            )
+        )
 
     return events
 
 
-def _customer_tank_events(
+def project_customer_inventory(
     instance: Instance,
     customer: Customer,
-    deliveries_by_arrival: dict[int, dict[int, float]],
+    deliveries: dict[int, float],
 ) -> list[TankEvent]:
+    """Calculate tank inventory events for a single customer over the horizon."""
     inventory = customer.initial_tank_quantity
-    arrival_deliveries = deliveries_by_arrival.get(customer.index, {})
     deliveries_by_step: dict[int, float] = defaultdict(float)
 
-    for arrival, quantity in arrival_deliveries.items():
+    for arrival, quantity in deliveries.items():
         step = min(max(arrival // instance.unit, 0), instance.horizon - 1)
         deliveries_by_step[step] += quantity
 

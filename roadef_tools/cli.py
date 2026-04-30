@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 
 from .analysis import customer_inventory_summary, summarize_solution
+from .solver.greedy import construct_solution
 from .evaluate import evaluate_solution
 from .inventory import tank_events, tank_violations
 from .geo import mds_coordinates, plot_geo, write_geo_csv
@@ -203,6 +204,28 @@ def cmd_rule_check(args: argparse.Namespace) -> int:
 
 def cmd_rules_index(args: argparse.Namespace) -> int:
     print(RULES_INDEX.read_text())
+    return 0
+
+
+def cmd_construct_solution(args: argparse.Namespace) -> int:
+    instance = load_instance(args.instance_xml)
+    solution, report = construct_solution(
+        instance,
+        safety_buffer=args.safety_buffer,
+        max_shifts=args.max_shifts,
+    )
+    save_solution(solution, args.output_xml)
+    print(f"wrote,{args.output_xml}")
+    print(f"shifts,{report.shifts}")
+    print(f"operations,{report.operations}")
+    print(f"delivered_quantity,{report.delivered_quantity:.6f}")
+    print(f"exhausted_resources,{report.exhausted_resources}")
+    print(f"unscheduled_customers,{len(report.unscheduled_customers)}")
+    if report.unscheduled_customers:
+        print(
+            "unscheduled_customer_ids,"
+            + " ".join(str(point) for point in report.unscheduled_customers[: args.limit])
+        )
     return 0
 
 
@@ -671,6 +694,14 @@ def build_parser() -> argparse.ArgumentParser:
 
     rules_index = subparsers.add_parser("rules-index")
     rules_index.set_defaults(func=cmd_rules_index)
+
+    construct = subparsers.add_parser("construct-solution")
+    construct.add_argument("instance_xml")
+    construct.add_argument("output_xml")
+    construct.add_argument("--safety-buffer", type=float, default=0.20)
+    construct.add_argument("--max-shifts", type=int)
+    construct.add_argument("--limit", type=int, default=25)
+    construct.set_defaults(func=cmd_construct_solution)
 
     matrix_summary = subparsers.add_parser("matrix-summary")
     matrix_summary.add_argument("instance_xml")
