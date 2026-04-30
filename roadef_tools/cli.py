@@ -10,6 +10,7 @@ from pathlib import Path
 
 from .analysis import customer_inventory_summary, summarize_solution
 from .solver.greedy import construct_solution
+from .solver.cluster_greedy import construct_cluster_solution
 from .evaluate import evaluate_solution
 from .inventory import tank_events, tank_violations
 from .geo import mds_coordinates, plot_geo, write_geo_csv
@@ -212,6 +213,29 @@ def cmd_construct_solution(args: argparse.Namespace) -> int:
     solution, report = construct_solution(
         instance,
         safety_buffer=args.safety_buffer,
+        max_shifts=args.max_shifts,
+    )
+    save_solution(solution, args.output_xml)
+    print(f"wrote,{args.output_xml}")
+    print(f"shifts,{report.shifts}")
+    print(f"operations,{report.operations}")
+    print(f"delivered_quantity,{report.delivered_quantity:.6f}")
+    print(f"exhausted_resources,{report.exhausted_resources}")
+    print(f"unscheduled_customers,{len(report.unscheduled_customers)}")
+    if report.unscheduled_customers:
+        print(
+            "unscheduled_customer_ids,"
+            + " ".join(str(point) for point in report.unscheduled_customers[: args.limit])
+        )
+    return 0
+
+
+def cmd_cluster_construct_solution(args: argparse.Namespace) -> int:
+    instance = load_instance(args.instance_xml)
+    solution, report = construct_cluster_solution(
+        instance,
+        safety_buffer=args.safety_buffer,
+        neighborhood_size=args.neighborhood_size,
         max_shifts=args.max_shifts,
     )
     save_solution(solution, args.output_xml)
@@ -702,6 +726,15 @@ def build_parser() -> argparse.ArgumentParser:
     construct.add_argument("--max-shifts", type=int)
     construct.add_argument("--limit", type=int, default=25)
     construct.set_defaults(func=cmd_construct_solution)
+
+    cluster_construct = subparsers.add_parser("cluster-construct-solution")
+    cluster_construct.add_argument("instance_xml")
+    cluster_construct.add_argument("output_xml")
+    cluster_construct.add_argument("--safety-buffer", type=float, default=0.20)
+    cluster_construct.add_argument("--neighborhood-size", type=int, default=5)
+    cluster_construct.add_argument("--max-shifts", type=int)
+    cluster_construct.add_argument("--limit", type=int, default=25)
+    cluster_construct.set_defaults(func=cmd_cluster_construct_solution)
 
     matrix_summary = subparsers.add_parser("matrix-summary")
     matrix_summary.add_argument("instance_xml")
