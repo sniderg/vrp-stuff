@@ -9,9 +9,16 @@ import sys
 from pathlib import Path
 
 from .analysis import customer_inventory_summary, summarize_solution
+from .contest import score_prefix_with_feasibility_tail
 from .solver.greedy import construct_solution
 from .solver.cluster_greedy import construct_cluster_solution
 from .evaluate import evaluate_solution
+from .improve import (
+    prune_redundant_shifts,
+    remove_redundant_source_visits,
+    trim_redundant_deliveries,
+)
+from .highs_repair import repair_quantities_with_highs
 from .inventory import tank_events, tank_violations
 from .geo import mds_coordinates, plot_geo, write_geo_csv
 from .movement import (
@@ -232,11 +239,18 @@ def cmd_construct_solution(args: argparse.Namespace) -> int:
 
 def cmd_cluster_construct_solution(args: argparse.Namespace) -> int:
     instance = load_instance(args.instance_xml)
+    score_cutoff_minute = (
+        None
+        if args.score_days is None
+        else args.score_days * 1440
+    )
     solution, report = construct_cluster_solution(
         instance,
         safety_buffer=args.safety_buffer,
         neighborhood_size=args.neighborhood_size,
         max_shifts=args.max_shifts,
+        score_cutoff_minute=score_cutoff_minute,
+        terminal_buffer_days=args.terminal_buffer_days,
     )
     save_solution(solution, args.output_xml)
     print(f"wrote,{args.output_xml}")
@@ -631,6 +645,83 @@ def cmd_penalties(args: argparse.Namespace) -> int:
     return 1 if args.fail_on_hard and penalties.hard_violations else 0
 
 
+def cmd_contest_score(args: argparse.Namespace) -> int:
+    instance = load_instance(args.instance_xml)
+    solution = load_solution(args.solution_xml)
+    score = score_prefix_with_feasibility_tail(
+        instance,
+        solution,
+        score_days=args.score_days,
+        feasibility_days=args.feasibility_days,
+        ignore_tail_call_ins=args.ignore_tail_call_ins,
+    )
+    row = score.flat()
+
+    if args.output_csv:
+        with Path(args.output_csv).open("w", newline="") as file:
+            writer = csv.DictWriter(file, fieldnames=list(row))
+            writer.writeheader()
+            writer.writerow(row)
+
+    for key, value in row.items():
+        print(f"{key},{value}")
+    return 1 if args.fail_on_infeasible and not score.feasible else 0
+
+
+def cmd_contest_prune(args: argparse.Namespace) -> int:
+    instance = load_instance(args.instance_xml)
+    solution = load_solution(args.solution_xml)
+    improved, report = prune_redundant_shifts(
+        instance,
+        solution,
+        score_days=args.score_days,
+        feasibility_days=args.feasibility_days,
+        ignore_tail_call_ins=args.ignore_tail_call_ins,
+        max_passes=args.max_passes,
+    )
+    if args.trim_deliveries:
+        improved = trim_redundant_deliveries(
+            instance,
+            improved,
+            score_days=args.score_days,
+            feasibility_days=args.feasibility_days,
+            ignore_tail_call_ins=args.ignore_tail_call_ins,
+            max_rounds=args.trim_rounds,
+        )
+    if args.remove_sources:
+        improved = remove_redundant_source_visits(
+            instance,
+            improved,
+            score_days=args.score_days,
+            feasibility_days=args.feasibility_days,
+            ignore_tail_call_ins=args.ignore_tail_call_ins,
+            max_rounds=args.source_rounds,
+        )
+    save_solution(improved, args.output_xml)
+    row = report.flat()
+    print(f"wrote,{args.output_xml}")
+    for key, value in row.items():
+        print(f"{key},{value}")
+    return 0
+
+
+def cmd_contest_highs_repair(args: argparse.Namespace) -> int:
+    instance = load_instance(args.instance_xml)
+    solution = load_solution(args.solution_xml)
+    repaired, report = repair_quantities_with_highs(
+        instance,
+        solution,
+        score_days=args.score_days,
+        feasibility_days=args.feasibility_days,
+        ignore_tail_call_ins=args.ignore_tail_call_ins,
+    )
+    save_solution(repaired, args.output_xml)
+    print(f"wrote,{args.output_xml}")
+    for key, value in report.flat().items():
+        print(f"{key},{value}")
+    return 1 if args.fail_on_infeasible and not report.after_feasible else 0
+
+
 def cmd_mds_map(args: argparse.Namespace) -> int:
     instance = load_instance(args.instance_xml)
     points = mds_coordinates(
@@ -733,6 +824,8 @@ def build_parser() -> argparse.ArgumentParser:
     cluster_construct.add_argument("--safety-buffer", type=float, default=0.20)
     cluster_construct.add_argument("--neighborhood-size", type=int, default=5)
     cluster_construct.add_argument("--max-shifts", type=int)
+    cluster_construct.add_argument("--score-days", type=int)
+    cluster_construct.add_argument("--terminal-buffer-days", type=float, default=0.0)
     cluster_construct.add_argument("--limit", type=int, default=25)
     cluster_construct.set_defaults(func=cmd_cluster_construct_solution)
 
@@ -853,6 +946,40 @@ def build_parser() -> argparse.ArgumentParser:
     penalties.add_argument("--frontload-share", type=float, default=10_000.0)
     penalties.add_argument("--hard-violation", type=float, default=1_000_000_000.0)
     penalties.set_defaults(func=cmd_penalties)
+
+    contest_score = subparsers.add_parser("contest-score")
+    contest_score.add_argument("instance_xml")
+    contest_score.add_argument("solution_xml")
+    contest_score.add_argument("--score-days", type=int, required=True)
+    contest_score.add_argument("--feasibility-days", type=int)
+    contest_score.add_argument("--ignore-tail-call-ins", action="store_true")
+    contest_score.add_argument("--output-csv")
+    contest_score.add_argument("--fail-on-infeasible", action="store_true")
+    contest_score.set_defaults(func=cmd_contest_score)
+
+    contest_prune = subparsers.add_parser("contest-prune")
+    contest_prune.add_argument("instance_xml")
+    contest_prune.add_argument("solution_xml")
+    contest_prune.add_argument("output_xml")
+    contest_prune.add_argument("--score-days", type=int, required=True)
+    contest_prune.add_argument("--feasibility-days", type=int)
+    contest_prune.add_argument("--ignore-tail-call-ins", action="store_true")
+    contest_prune.add_argument("--max-passes", type=int, default=3)
+    contest_prune.add_argument("--trim-deliveries", action="store_true")
+    contest_prune.add_argument("--trim-rounds", type=int, default=5)
+    contest_prune.add_argument("--remove-sources", action="store_true")
+    contest_prune.add_argument("--source-rounds", type=int, default=10)
+    contest_prune.set_defaults(func=cmd_contest_prune)
+
+    highs_repair = subparsers.add_parser("contest-highs-repair")
+    highs_repair.add_argument("instance_xml")
+    highs_repair.add_argument("solution_xml")
+    highs_repair.add_argument("output_xml")
+    highs_repair.add_argument("--score-days", type=int, required=True)
+    highs_repair.add_argument("--feasibility-days", type=int)
+    highs_repair.add_argument("--ignore-tail-call-ins", action="store_true")
+    highs_repair.add_argument("--fail-on-infeasible", action="store_true")
+    highs_repair.set_defaults(func=cmd_contest_highs_repair)
 
     mds_map = subparsers.add_parser("mds-map")
     mds_map.add_argument("instance_xml")
