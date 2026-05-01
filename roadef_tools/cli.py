@@ -14,6 +14,7 @@ from .solver.greedy import construct_solution
 from .solver.cluster_greedy import construct_cluster_solution
 from .evaluate import evaluate_solution
 from .improve import (
+    move_single_customer_shifts,
     prune_redundant_shifts,
     remove_redundant_source_visits,
     trim_redundant_deliveries,
@@ -671,6 +672,15 @@ def cmd_contest_score(args: argparse.Namespace) -> int:
 def cmd_contest_prune(args: argparse.Namespace) -> int:
     instance = load_instance(args.instance_xml)
     solution = load_solution(args.solution_xml)
+    if args.move_single_shifts:
+        solution = move_single_customer_shifts(
+            instance,
+            solution,
+            score_days=args.score_days,
+            feasibility_days=args.feasibility_days,
+            ignore_tail_call_ins=args.ignore_tail_call_ins,
+            max_moves=args.move_rounds,
+        )
     improved, report = prune_redundant_shifts(
         instance,
         solution,
@@ -715,8 +725,10 @@ def cmd_contest_highs_repair(args: argparse.Namespace) -> int:
         feasibility_days=args.feasibility_days,
         ignore_tail_call_ins=args.ignore_tail_call_ins,
     )
-    save_solution(repaired, args.output_xml)
+    output_solution = repaired if report.after_feasible else solution
+    save_solution(output_solution, args.output_xml)
     print(f"wrote,{args.output_xml}")
+    print(f"applied,{str(report.after_feasible)}")
     for key, value in report.flat().items():
         print(f"{key},{value}")
     return 1 if args.fail_on_infeasible and not report.after_feasible else 0
@@ -999,6 +1011,8 @@ def build_parser() -> argparse.ArgumentParser:
     contest_prune.add_argument("--trim-rounds", type=int, default=5)
     contest_prune.add_argument("--remove-sources", action="store_true")
     contest_prune.add_argument("--source-rounds", type=int, default=10)
+    contest_prune.add_argument("--move-single-shifts", action="store_true")
+    contest_prune.add_argument("--move-rounds", type=int, default=10)
     contest_prune.set_defaults(func=cmd_contest_prune)
 
     highs_repair = subparsers.add_parser("contest-highs-repair")

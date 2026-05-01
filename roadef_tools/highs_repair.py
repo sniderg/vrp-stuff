@@ -46,6 +46,7 @@ def repair_with_highs_selection(
     *,
     score_days: int,
     feasibility_days: int | None = None,
+    ignore_tail_call_ins: bool = False,
 ) -> tuple[Solution, HighsRepairReport]:
     try:
         import highspy
@@ -59,6 +60,7 @@ def repair_with_highs_selection(
         working,
         score_days=score_days,
         feasibility_days=feasibility_days,
+        ignore_tail_call_ins=ignore_tail_call_ins,
     )
     
     # Identify variables: all deliveries to VMI customers
@@ -165,7 +167,13 @@ def repair_with_highs_selection(
         repaired = _apply_quantities(working, variables, q_values)
         repaired = _cap_loads(instance, repaired)
 
-    after = score_prefix_with_feasibility_tail(instance, repaired, score_days=score_days, feasibility_days=feasibility_days)
+    after = score_prefix_with_feasibility_tail(
+        instance,
+        repaired,
+        score_days=score_days,
+        feasibility_days=feasibility_days,
+        ignore_tail_call_ins=ignore_tail_call_ins,
+    )
     return repaired, HighsRepairReport(
         status=status, variables=len(variables)*2, constraints=highs.getNumRow(),
         before_feasible=before.feasible, after_feasible=after.feasible,
@@ -187,6 +195,7 @@ def repair_quantities_with_highs(
         solution,
         score_days=score_days,
         feasibility_days=feasibility_days,
+        ignore_tail_call_ins=ignore_tail_call_ins,
     )
 
 
