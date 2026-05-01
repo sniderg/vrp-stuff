@@ -172,3 +172,31 @@ def tank_violations(instance: Instance, solution: Solution) -> list[TankViolatio
             )
 
     return violations
+
+
+def days_of_inventory(
+    instance: Instance,
+    customer: Customer,
+    current_inventory: float,
+    start_step: int,
+    lead_time_minutes: float = 0.0,
+) -> float:
+    """Calculate how many days of autonomy are left before a safety breach,
+    minus the logistical lead time (travel time from source).
+    """
+    if customer.call_in:
+        return 999.0
+    
+    inventory = current_inventory
+    steps_autonomy = 0
+    for step in range(start_step, instance.horizon):
+        forecast = customer.forecast[step] if step < len(customer.forecast) else 0.0
+        inventory -= forecast
+        if inventory < customer.safety_level - EPSILON:
+            break
+        steps_autonomy += 1
+    
+    inventory_autonomy_minutes = steps_autonomy * instance.unit
+    logistical_autonomy_minutes = inventory_autonomy_minutes - lead_time_minutes
+    
+    return logistical_autonomy_minutes / 1440.0

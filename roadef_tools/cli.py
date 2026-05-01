@@ -770,6 +770,36 @@ def cmd_check(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_doi_report(args: argparse.Namespace) -> int:
+    from .inventory import days_of_inventory, project_customer_inventory, delivery_by_customer_step
+    from .model import Solution
+    instance = load_instance(args.instance_xml)
+    solution = load_solution(args.solution_xml) if args.solution_xml else Solution(shifts=())
+    deliveries_by_arrival = delivery_by_customer_step(solution)
+    
+    # Pre-calculate nearest source travel time for each customer
+    source_travel = {}
+    for customer in instance.customers:
+        min_travel = min(instance.time_matrix[source.index][customer.index] for source in instance.sources)
+        source_travel[customer.index] = min_travel
+
+    step = args.minute // instance.unit
+    print("point,kind,inventory,safety_level,lead_time_min,logistical_doi,status")
+    for customer in instance.customers:
+        events = project_customer_inventory(instance, customer, deliveries_by_arrival.get(customer.index, {}))
+        current_event = events[min(step, len(events)-1)]
+        lead_time = source_travel[customer.index]
+        doi = days_of_inventory(instance, customer, current_event.ending_inventory, step + 1, lead_time_minutes=lead_time)
+        
+        status = "OK"
+        if doi < 0: status = "INSOLVENT"
+        elif doi < 0.5: status = "CRITICAL"
+        elif doi < 1.0: status = "URGENT"
+        
+        print(f"{customer.index},{'call-in' if customer.call_in else 'vmi'},{current_event.ending_inventory:.1f},{customer.safety_level:.1f},{lead_time},{doi:.2f},{status}")
+    return 0
+
+
 def cmd_clone_solution(args: argparse.Namespace) -> int:
     solution = load_solution(args.solution_xml)
     save_solution(solution, args.output_xml)
@@ -999,6 +1029,12 @@ def build_parser() -> argparse.ArgumentParser:
     clone.add_argument("solution_xml")
     clone.add_argument("output_xml")
     clone.set_defaults(func=cmd_clone_solution)
+
+    doi_report = subparsers.add_parser("doi-report")
+    doi_report.add_argument("instance_xml")
+    doi_report.add_argument("solution_xml", nargs="?")
+    doi_report.add_argument("--minute", type=int, default=0)
+    doi_report.set_defaults(func=cmd_doi_report)
 
     return parser
 

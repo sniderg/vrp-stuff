@@ -119,5 +119,23 @@ def jitter_targeted_arrivals(current: IRPState, rng) -> IRPState:
     return current.with_solution(Solution(shifts=tuple(shifts)))
 
 
+def highs_repair_operator(current: IRPState, rng) -> IRPState:
+    from .highs_repair import repair_with_highs_selection
+
+    # Restore removed operations first so they can be optimized by MILP
+    state_with_all = restore_removed_operations(current, rng)
+
+    # Use the whole horizon for repair in this probe
+    score_days = (current.instance.horizon * current.instance.unit + 1439) // 1440
+    
+    repaired_solution, report = repair_with_highs_selection(
+        current.instance,
+        state_with_all.solution,
+        score_days=score_days,
+    )
+
+    return state_with_all.with_solution(repaired_solution)
+
+
 def save_state_solution(state: IRPState, output_xml: str | Path) -> None:
     save_solution(state.solution, output_xml)

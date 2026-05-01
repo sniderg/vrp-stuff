@@ -8,6 +8,7 @@ import numpy as np
 from roadef_tools.alns_state import (
     IRPState,
     PerturbationScope,
+    highs_repair_operator,
     jitter_targeted_arrivals,
     remove_targeted_operations,
     restore_removed_operations,
@@ -83,8 +84,9 @@ def main() -> None:
     alns.add_destroy_operator(remove_targeted_operations, name="remove_targeted_operations")
     alns.add_destroy_operator(jitter_targeted_arrivals, name="jitter_targeted_arrivals")
     alns.add_repair_operator(restore_removed_operations, name="restore_removed_operations")
+    alns.add_repair_operator(highs_repair_operator, name="highs_repair_operator")
 
-    select = RandomSelect(num_destroy=2, num_repair=1)
+    select = RandomSelect(num_destroy=2, num_repair=2)
     accept = HillClimbing()
     stop = MaxIterations(args.iterations)
     result = alns.iterate(initial, select, accept, stop)
