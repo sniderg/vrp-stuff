@@ -69,6 +69,9 @@ def repair_with_highs_selection(
         for op_index, op in enumerate(shift.operations):
             customer = instance.customer_by_point.get(op.point)
             if customer and not customer.call_in:
+                min_quantity = customer.min_operation_quantity
+                if customer.orders:
+                    min_quantity = max(min_quantity, op.quantity)
                 variables.append(
                     _DeliveryVariable(
                         shift_index=shift.index,
@@ -77,7 +80,7 @@ def repair_with_highs_selection(
                         arrival=op.arrival,
                         arrival_step=min(max(op.arrival // instance.unit, 0), instance.horizon - 1),
                         original_quantity=op.quantity,
-                        min_quantity=customer.min_operation_quantity,
+                        min_quantity=min_quantity,
                         max_quantity=customer.capacity,
                     )
                 )

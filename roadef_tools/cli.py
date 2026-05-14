@@ -14,7 +14,6 @@ from .solver.greedy import construct_solution
 from .solver.cluster_greedy import construct_cluster_solution
 from .evaluate import evaluate_solution
 from .improve import (
-    move_single_customer_shifts,
     prune_redundant_shifts,
     remove_redundant_source_visits,
     trim_redundant_deliveries,
@@ -83,6 +82,144 @@ def cmd_instance_summary(args: argparse.Namespace) -> int:
     print(f"avg_customer_forecast_per_step,{sum(avg_forecast) / len(avg_forecast):.6f}")
     print(f"total_initial_customer_inventory,{sum(c.initial_tank_quantity for c in instance.customers):.3f}")
     print(f"total_customer_safety_level,{sum(c.safety_level for c in instance.customers):.3f}")
+    return 0
+
+
+from .solver.candidate_gen import generate_shift_candidates, GeneratorConfig
+from .solver.highs_selector import select_shifts_with_highs
+from .solver.rolling_highs import RollingHighsConfig, rolling_highs_select
+from .solver.targeted_rescue import RescueConfig, targeted_rescue
+from .solver.column_loop import ColumnLoopConfig, column_generation_rescue
+
+
+def cmd_highs_select(args: argparse.Namespace) -> int:
+    instance = load_instance(args.instance_xml)
+    prefix = load_solution(args.prefix_xml)
+
+    print(f"Generating candidates for days {args.start_day} to {args.end_day}...")
+    config = GeneratorConfig(
+        max_candidates_per_window=args.candidates_per_window,
+        neighborhood_size=args.neighborhood_size,
+    )
+    candidates = generate_shift_candidates(
+        instance, prefix, 
+        start_day=args.start_day, 
+        end_day=args.end_day,
+        config=config
+    )
+    print(f"Generated {len(candidates)} candidate shifts.")
+    
+    print("Selecting shifts with HiGHS...")
+    solution = select_shifts_with_highs(
+        instance, prefix, candidates,
+        start_day=args.start_day,
+        end_day=args.end_day
+    )
+    
+    save_solution(solution, args.output_xml)
+    print(f"Saved solution to {args.output_xml}")
+    return 0
+
+
+def cmd_rolling_highs_select(args: argparse.Namespace) -> int:
+    instance = load_instance(args.instance_xml)
+    initial_solution = load_solution(args.prefix_xml) if args.prefix_xml else None
+    seed_candidate_solution = (
+        load_solution(args.candidate_solution_xml)
+        if args.candidate_solution_xml
+        else None
+    )
+    config = RollingHighsConfig(
+        start_day=args.start_day,
+        end_day=args.end_day,
+        lookahead_days=args.lookahead_days,
+        commit_days=args.commit_days,
+        candidates_per_window=args.candidates_per_window,
+        neighborhood_size=args.neighborhood_size,
+        feasibility_tail_days=args.feasibility_tail_days,
+        candidate_source=args.candidate_source,
+    )
+    solution, steps = rolling_highs_select(
+        instance,
+        initial_solution=initial_solution,
+        seed_candidate_solution=seed_candidate_solution,
+        config=config,
+        progress=print,
+    )
+    save_solution(solution, args.output_xml)
+    print(f"Saved rolling solution to {args.output_xml}")
+    print("day,window_end_day,commit_end_day,generated_candidates,committed_shifts,feasible,errors,hard")
+    for step in steps:
+        score = step.score
+        print(
+            f"{step.day},{step.window_end_day},{step.commit_end_day},"
+            f"{step.generated_candidates},{step.committed_shifts},"
+            f"{score.feasible if score else ''},"
+            f"{score.feasibility_errors if score else ''},"
+            f"{score.hard_violations if score else ''}"
+        )
+    return 0
+
+
+def cmd_targeted_rescue(args: argparse.Namespace) -> int:
+    instance = load_instance(args.instance_xml)
+    baseline = load_solution(args.solution_xml)
+    config = RescueConfig(
+        start_day=args.start_day,
+        end_day=args.end_day,
+        replace_from_day=args.replace_from_day,
+        max_customers=args.max_customers,
+        samples_per_customer=args.samples_per_customer,
+        target_fill_ratio=args.target_fill_ratio,
+        max_pre_service_fill_ratio=args.max_pre_service_fill_ratio,
+        sample_lookback_days=args.sample_lookback_days,
+        max_chain_length=args.max_chain_length,
+        nearest_chain_neighbors=args.nearest_chain_neighbors,
+        variable_quantity_columns=args.variable_quantity_columns,
+        pressure_pricing=not args.no_pressure_pricing,
+    )
+    rescued, report = targeted_rescue(instance, baseline, config=config)
+    save_solution(rescued, args.output_xml)
+    print(f"Saved rescued solution to {args.output_xml}")
+    print(f"failing_customers,{','.join(map(str, report.failing_customers))}")
+    print(f"generated_candidates,{report.generated_candidates}")
+    print(f"selected_extra_shifts,{report.selected_extra_shifts}")
+    if report.quantity_repair_status is not None:
+        print(f"quantity_repair_status,{report.quantity_repair_status}")
+        print(f"quantity_repair_constraints,{report.quantity_repair_constraints}")
+    return 0
+
+
+def cmd_column_generation_rescue(args: argparse.Namespace) -> int:
+    instance = load_instance(args.instance_xml)
+    baseline = load_solution(args.solution_xml)
+    config = ColumnLoopConfig(
+        start_day=args.start_day,
+        end_day=args.end_day,
+        replace_from_day=args.replace_from_day,
+        iterations=args.iterations,
+        max_pressure_customers=args.max_pressure_customers,
+        neighbors_per_anchor=args.neighbors_per_anchor,
+        batch_workers=args.batch_workers,
+        samples_per_customer=args.samples_per_customer,
+        sample_lookback_days=args.sample_lookback_days,
+        max_chain_length=args.max_chain_length,
+        nearest_chain_neighbors=args.nearest_chain_neighbors,
+        max_candidates_per_iteration=args.max_candidates_per_iteration,
+        target_fill_ratio=args.target_fill_ratio,
+        max_pre_service_fill_ratio=args.max_pre_service_fill_ratio,
+    )
+    solution, steps = column_generation_rescue(instance, baseline, config=config)
+    save_solution(solution, args.output_xml)
+    print(f"Saved column-loop solution to {args.output_xml}")
+    print("iteration,generated_candidates,pool_size,selected_extra_shifts,feasible,errors,hard,first_safety_breach_minute")
+    for step in steps:
+        print(
+            f"{step.iteration},{step.generated_candidates},{step.pool_size},"
+            f"{step.selected_extra_shifts},{step.feasible},"
+            f"{step.feasibility_errors},{step.hard_violations},"
+            f"{step.first_safety_breach_minute}"
+        )
     return 0
 
 
@@ -672,15 +809,6 @@ def cmd_contest_score(args: argparse.Namespace) -> int:
 def cmd_contest_prune(args: argparse.Namespace) -> int:
     instance = load_instance(args.instance_xml)
     solution = load_solution(args.solution_xml)
-    if args.move_single_shifts:
-        solution = move_single_customer_shifts(
-            instance,
-            solution,
-            score_days=args.score_days,
-            feasibility_days=args.feasibility_days,
-            ignore_tail_call_ins=args.ignore_tail_call_ins,
-            max_moves=args.move_rounds,
-        )
     improved, report = prune_redundant_shifts(
         instance,
         solution,
@@ -725,10 +853,8 @@ def cmd_contest_highs_repair(args: argparse.Namespace) -> int:
         feasibility_days=args.feasibility_days,
         ignore_tail_call_ins=args.ignore_tail_call_ins,
     )
-    output_solution = repaired if report.after_feasible else solution
-    save_solution(output_solution, args.output_xml)
+    save_solution(repaired, args.output_xml)
     print(f"wrote,{args.output_xml}")
-    print(f"applied,{str(report.after_feasible)}")
     for key, value in report.flat().items():
         print(f"{key},{value}")
     return 1 if args.fail_on_infeasible and not report.after_feasible else 0
@@ -812,6 +938,51 @@ def cmd_doi_report(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_resilience_report(args: argparse.Namespace) -> int:
+    """Stress test: If all deliveries stop at `blackout-start`, who fails and when?"""
+    from .inventory import project_customer_inventory, delivery_by_customer_step
+    from .model import Solution
+    
+    instance = load_instance(args.instance_xml)
+    solution = load_solution(args.solution_xml) if args.solution_xml else Solution(shifts=())
+    
+    # Only keep deliveries BEFORE the blackout
+    deliveries_by_arrival = delivery_by_customer_step(solution)
+    pre_blackout_deliveries = {}
+    for point, events in deliveries_by_arrival.items():
+        pre_blackout_deliveries[point] = {arr: qty for arr, qty in events.items() if arr < args.blackout_start}
+    
+    start_step = args.blackout_start // instance.unit
+    end_step = start_step + (args.duration_days * 1440 // instance.unit)
+    
+    print(f"Stress Test: Blackout starting at minute {args.blackout_start}")
+    print("point,kind,hours_until_breach,status")
+    
+    breach_counts = 0
+    for customer in instance.customers:
+        if customer.call_in: continue
+        
+        events = project_customer_inventory(instance, customer, pre_blackout_deliveries.get(customer.index, {}))
+        
+        first_breach_step = None
+        for step in range(start_step, min(end_step, len(events))):
+            if events[step].safety_breach:
+                first_breach_step = step
+                break
+        
+        if first_breach_step is not None:
+            hours = (first_breach_step * instance.unit - args.blackout_start) / 60.0
+            status = "FAIL" if hours < 24 else "WARNING"
+            print(f"{customer.index},vmi,{hours:.1f},{status}")
+            breach_counts += 1
+            
+    if breach_counts == 0:
+        print(f"SYSTEM SECURE: All customers survived a {args.duration_days}-day blackout.")
+    else:
+        print(f"SYSTEM VULNERABLE: {breach_counts} customers breached safety levels within {args.duration_days} days.")
+    return 0
+
+
 def cmd_clone_solution(args: argparse.Namespace) -> int:
     solution = load_solution(args.solution_xml)
     save_solution(solution, args.output_xml)
@@ -878,7 +1049,8 @@ def build_parser() -> argparse.ArgumentParser:
     export_edges = subparsers.add_parser("export-edges")
     export_edges.add_argument("instance_xml")
     export_edges.add_argument("output_csv")
-    export_edges.set_defaults(func=cmd_export_edges)
+    export_defaults = {"func": cmd_export_edges}
+    export_edges.set_defaults(**export_defaults)
 
     nearest = subparsers.add_parser("nearest")
     nearest.add_argument("instance_xml")
@@ -1011,8 +1183,6 @@ def build_parser() -> argparse.ArgumentParser:
     contest_prune.add_argument("--trim-rounds", type=int, default=5)
     contest_prune.add_argument("--remove-sources", action="store_true")
     contest_prune.add_argument("--source-rounds", type=int, default=10)
-    contest_prune.add_argument("--move-single-shifts", action="store_true")
-    contest_prune.add_argument("--move-rounds", type=int, default=10)
     contest_prune.set_defaults(func=cmd_contest_prune)
 
     highs_repair = subparsers.add_parser("contest-highs-repair")
@@ -1025,7 +1195,75 @@ def build_parser() -> argparse.ArgumentParser:
     highs_repair.add_argument("--fail-on-infeasible", action="store_true")
     highs_repair.set_defaults(func=cmd_contest_highs_repair)
 
+    highs_select = subparsers.add_parser("highs-select")
+    highs_select.add_argument("instance_xml", type=Path)
+    highs_select.add_argument("prefix_xml", type=Path)
+    highs_select.add_argument("output_xml", type=Path)
+    highs_select.add_argument("--start-day", type=int, default=7)
+    highs_select.add_argument("--end-day", type=int, default=14)
+    highs_select.add_argument("--candidates-per-window", type=int, default=10)
+    highs_select.add_argument("--neighborhood-size", type=int, default=5)
+    highs_select.set_defaults(func=cmd_highs_select)
+
+    rolling_highs = subparsers.add_parser("rolling-highs-select")
+    rolling_highs.add_argument("instance_xml", type=Path)
+    rolling_highs.add_argument("output_xml", type=Path)
+    rolling_highs.add_argument("--prefix-xml", type=Path)
+    rolling_highs.add_argument("--candidate-solution-xml", type=Path)
+    rolling_highs.add_argument(
+        "--candidate-source",
+        choices=["generated", "seed", "both"],
+        default="generated",
+    )
+    rolling_highs.add_argument("--start-day", type=int, default=0)
+    rolling_highs.add_argument("--end-day", type=int, default=14)
+    rolling_highs.add_argument("--lookahead-days", type=int, default=2)
+    rolling_highs.add_argument("--commit-days", type=int, default=1)
+    rolling_highs.add_argument("--feasibility-tail-days", type=int, default=1)
+    rolling_highs.add_argument("--candidates-per-window", type=int, default=12)
+    rolling_highs.add_argument("--neighborhood-size", type=int, default=15)
+    rolling_highs.set_defaults(func=cmd_rolling_highs_select)
+
+    targeted_rescue_cmd = subparsers.add_parser("targeted-rescue")
+    targeted_rescue_cmd.add_argument("instance_xml", type=Path)
+    targeted_rescue_cmd.add_argument("solution_xml", type=Path)
+    targeted_rescue_cmd.add_argument("output_xml", type=Path)
+    targeted_rescue_cmd.add_argument("--start-day", type=int, default=0)
+    targeted_rescue_cmd.add_argument("--end-day", type=int, default=14)
+    targeted_rescue_cmd.add_argument("--replace-from-day", type=int, default=7)
+    targeted_rescue_cmd.add_argument("--max-customers", type=int, default=12)
+    targeted_rescue_cmd.add_argument("--samples-per-customer", type=int, default=6)
+    targeted_rescue_cmd.add_argument("--target-fill-ratio", type=float, default=0.95)
+    targeted_rescue_cmd.add_argument("--max-pre-service-fill-ratio", type=float, default=0.95)
+    targeted_rescue_cmd.add_argument("--sample-lookback-days", type=int, default=5)
+    targeted_rescue_cmd.add_argument("--max-chain-length", type=int, default=3)
+    targeted_rescue_cmd.add_argument("--nearest-chain-neighbors", type=int, default=4)
+    targeted_rescue_cmd.add_argument("--variable-quantity-columns", action="store_true")
+    targeted_rescue_cmd.add_argument("--no-pressure-pricing", action="store_true")
+    targeted_rescue_cmd.set_defaults(func=cmd_targeted_rescue)
+
+    column_loop = subparsers.add_parser("column-generation-rescue")
+    column_loop.add_argument("instance_xml", type=Path)
+    column_loop.add_argument("solution_xml", type=Path)
+    column_loop.add_argument("output_xml", type=Path)
+    column_loop.add_argument("--start-day", type=int, default=0)
+    column_loop.add_argument("--end-day", type=int, default=14)
+    column_loop.add_argument("--replace-from-day", type=int, default=3)
+    column_loop.add_argument("--iterations", type=int, default=3)
+    column_loop.add_argument("--max-pressure-customers", type=int, default=12)
+    column_loop.add_argument("--neighbors-per-anchor", type=int, default=8)
+    column_loop.add_argument("--batch-workers", type=int, default=4)
+    column_loop.add_argument("--samples-per-customer", type=int, default=8)
+    column_loop.add_argument("--sample-lookback-days", type=int, default=14)
+    column_loop.add_argument("--max-chain-length", type=int, default=4)
+    column_loop.add_argument("--nearest-chain-neighbors", type=int, default=10)
+    column_loop.add_argument("--max-candidates-per-iteration", type=int, default=1200)
+    column_loop.add_argument("--target-fill-ratio", type=float, default=0.95)
+    column_loop.add_argument("--max-pre-service-fill-ratio", type=float, default=0.95)
+    column_loop.set_defaults(func=cmd_column_generation_rescue)
+
     mds_map = subparsers.add_parser("mds-map")
+
     mds_map.add_argument("instance_xml")
     mds_map.add_argument("output_csv")
     mds_map.add_argument("--output-png")
@@ -1049,6 +1287,13 @@ def build_parser() -> argparse.ArgumentParser:
     doi_report.add_argument("solution_xml", nargs="?")
     doi_report.add_argument("--minute", type=int, default=0)
     doi_report.set_defaults(func=cmd_doi_report)
+
+    resilience = subparsers.add_parser("resilience-report")
+    resilience.add_argument("instance_xml")
+    resilience.add_argument("solution_xml", nargs="?")
+    resilience.add_argument("--blackout-start", type=int, default=0)
+    resilience.add_argument("--duration-days", type=int, default=2)
+    resilience.set_defaults(func=cmd_resilience_report)
 
     return parser
 
