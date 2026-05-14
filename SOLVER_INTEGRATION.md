@@ -1,84 +1,126 @@
 # Solver Integration Notes
 
-This repo is now structured as a `uv` Python project with reusable modules under
-`roadef_tools/` and script entry points for experiments.
+## Current Architecture
 
-## Ready Integration Points
+The production solver pipeline is a **batched column-generation rescue loop**
+implemented in `roadef_tools/solver/`. ALNS scaffolding (`run_alns_probe.py`,
+`roadef_tools/alns_state.py`) is superseded by this approach.
 
-- `roadef_tools.xml_io`
-  - load/save ROADEF instance and solution XML.
-  - `save_solution()` round-trips through the official checker.
+### Module Map
 
-- `roadef_tools.evaluate`
-  - one-row evaluation for ALNS/MILP loops.
-  - includes local feasibility, soft penalties, smoothness, rolling progress, and optional official checker LR.
+| Module | Role |
+|---|---|
+| `solver/column_loop.py` | Outer CG rescue loop driver |
+| `solver/targeted_rescue.py` | Single-iteration rescue: pressure detection, candidate generation, HiGHS selection |
+| `solver/highs_selector.py` | HiGHS master problem: shift selection with pressure pricing and order-coverage constraints |
+| `solver/candidate_gen.py` | Route candidate generation with diverse top-K filtering |
+| `solver/rolling_highs.py` | Rolling horizon HiGHS selection (experimental) |
+| `solver/cluster_greedy.py` | Cluster-aware greedy constructor (baseline generation) |
+| `solver/greedy.py` | Basic greedy constructor |
+| `roadef_tools/highs_repair.py` | HiGHS-based quantity repair after shift selection |
 
-- `roadef_tools.penalties`
-  - separates hard physical constraints from soft searchable infeasibility.
-  - safety breaches are integral penalties in `kg * minutes`.
+### Integration Points
 
-- `roadef_tools.replay`
-  - point-in-time status for trucks, drivers, trailers, active arcs, loads, and customer inventories.
-
-- `roadef_tools.rolling`
-  - day-by-day cumulative demand/required-delivery monitoring.
-  - useful for incremental construction from day `1` to day `n`.
-
-- `roadef_tools.geo`
-  - MDS reconstruction from distance/time matrices.
-  - exports point coordinates and cluster labels for geographic targeting.
-
-- `roadef_tools.alns_state`
-  - initial ALNS state object and scoped perturbation operators.
-  - supports commands like "target cluster 3 between minutes 2880 and 4320".
-
-## Current ALNS Scaffold
-
-`run_alns_probe.py` runs against the `alns` package and supports:
-
-```bash
-uv run python run_alns_probe.py INSTANCE.xml SOLUTION.xml \
-  --geo-csv points.csv \
-  --target-cluster 0 \
-  --start-minute 0 \
-  --end-minute 1440 \
-  --iterations 1 \
-  --output-xml candidate.xml
+**Load/save:**
+```python
+from roadef_tools.xml_io import load_instance, load_solution, save_solution
+instance = load_instance("V2.18.xml")
+solution = load_solution(instance, "baseline.xml")
+save_solution(instance, solution, "output.xml")
 ```
 
-The current destroy/repair operators are deliberately conservative:
+**Evaluate:**
+```python
+from roadef_tools.contest import score_prefix_with_feasibility_tail
+score = score_prefix_with_feasibility_tail(instance, solution, score_days=14, feasibility_days=14)
+# score.feasible, score.feasibility_errors, score.hard_violations, score.first_safety_breach_minute
+```
 
-- `remove_targeted_operations`
-- `restore_removed_operations`
-- `jitter_targeted_arrivals`
+**Column-generation loop:**
+```python
+from roadef_tools.solver.column_loop import column_generation_rescue, ColumnLoopConfig
+config = ColumnLoopConfig(
+    start_day=0, end_day=14, replace_from_day=0,
+    iterations=10, max_pressure_customers=12,
+    samples_per_customer=6, max_chain_length=3,
+)
+best_solution, steps = column_generation_rescue(instance, baseline, config=config)
+```
 
-The repair step currently restores removed operations rather than doing true reinsertion. This is intentional scaffolding; real next steps are cheapest-insertion, regret insertion, and MILP repair over a scoped cluster/time window.
+**Single targeted rescue pass:**
+```python
+from roadef_tools.solver.targeted_rescue import targeted_rescue, RescueConfig
+config = RescueConfig(start_day=0, end_day=14, replace_from_day=7)
+rescued, report = targeted_rescue(instance, solution, config=config)
+```
 
-## Suggested Next Operators
+---
 
-- Destroy:
-  - remove all deliveries in cluster/time scope.
-  - remove low-margin customers in a cluster.
-  - remove high-cost arcs by route segment.
-  - remove over-frontloaded deliveries in early days.
+## CLI Commands
 
-- Repair:
-  - greedy feasible insertion using local rule penalties.
-  - regret-k insertion using distance/time deltas.
-  - small MILP repair for selected customers/shifts/trailers.
-  - preserve source load balance by adjusting source quantities with customer insertions.
+### Primary workflow
+
+```bash
+# Score a solution (14-day window, ignore tail after day 14)
+.venv/bin/python -m roadef_tools.cli contest-score \
+  INSTANCE.xml SOLUTION.xml \
+  --score-days 14 --feasibility-days 14 --ignore-tail-call-ins
+
+# Run column-generation rescue loop
+.venv/bin/python -m roadef_tools.cli column-generation-rescue \
+  INSTANCE.xml BASELINE.xml OUTPUT.xml \
+  --start-day 0 --end-day 14 --iterations 10
+
+# Run single targeted rescue pass
+.venv/bin/python -m roadef_tools.cli targeted-rescue \
+  INSTANCE.xml BASELINE.xml OUTPUT.xml \
+  --start-day 0 --end-day 14 --replace-from-day 7
+
+# Tank and rule diagnostics
+.venv/bin/python -m roadef_tools.cli tank-check INSTANCE.xml SOLUTION.xml --limit 10
+.venv/bin/python -m roadef_tools.cli rule-check INSTANCE.xml SOLUTION.xml --limit 10
+
+# DOI (days-of-inventory) urgency report
+.venv/bin/python -m roadef_tools.cli doi-report INSTANCE.xml SOLUTION.xml
+```
+
+---
+
+## HiGHS Boundary
+
+The HiGHS master problem in `highs_selector.py` selects a subset of candidate
+shifts to minimise a weighted penalty objective subject to:
+
+- **Driver non-overlap**: no two selected shifts for the same driver overlap in time
+- **Trailer non-overlap**: no two selected shifts for the same trailer overlap in time
+- **Order coverage**: each customer order in the window must be covered at least once
+- **Pressure pricing**: safety-critical customers get higher reward for being served
+
+HiGHS is called once per CG iteration. Pool size is capped by
+`max_candidates_per_iteration` to keep the master problem tractable. Typical
+solve time: 5–30 seconds at pool sizes of 400–1500.
+
+**Important:** HiGHS selects *routes*; quantities are fixed up afterward by
+`highs_repair.py`, which re-solves a small QP to maximise delivered quantity
+subject to tank capacity and safety constraints.
+
+---
 
 ## MILP Boundary
 
-Use MILP for bounded subproblems, not the whole ROADEF instance initially:
+Gurobi (`gurobipy`) is listed as an optional dependency but is not used in the
+current pipeline. HiGHS (`highspy`) is the active solver for both shift selection
+and quantity repair.
 
-- fixed day range, e.g. day 3-4.
-- fixed cluster set from MDS.
-- fixed candidate shifts/trailers.
-- variables for customer delivery selection, quantities, and insertion positions.
+---
 
-After MILP repair, write XML with `save_solution()`, run `evaluate`, then optionally run the official checker.
+## Inventory Model
 
-## Important Caution
+Safety breaches are penalised as `kg × minutes` (deficit × `instance.unit`).
+This is the contest scoring metric and drives both pressure detection and the
+HiGHS objective. See `roadef_tools/penalties.py` and `roadef_tools/inventory.py`.
 
-MDS coordinates are reconstructed from matrices and are not physical coordinates. They are useful for cluster targeting and neighborhood structure, but the authoritative movement model remains the directed time/distance matrices.
+MDS coordinates (from `roadef_tools/geo.py`) are reconstructed from distance/time
+matrices and are used for cluster targeting and neighborhood structure in candidate
+generation. They are **not** physical coordinates — all routing uses the directed
+time/distance matrices.

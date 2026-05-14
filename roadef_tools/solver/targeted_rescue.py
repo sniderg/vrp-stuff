@@ -179,9 +179,14 @@ def generate_rescue_candidates(
         breach_minute = _first_breach_minute(instance, baseline, customer_id, event_cache)
         if breach_minute is None:
             continue
-        latest_customer_arrival = min(breach_minute - instance.unit, end_minute - 1)
-        if latest_customer_arrival < start_minute:
-            continue
+        # When extending a solution (breach at or before the new window start),
+        # the customer needs service throughout the new window.
+        if breach_minute <= start_minute + instance.unit:
+            latest_customer_arrival = end_minute - 1
+        else:
+            latest_customer_arrival = min(breach_minute - instance.unit, end_minute - 1)
+            if latest_customer_arrival < start_minute:
+                continue
 
         for driver in instance.drivers:
             for trailer in instance.trailers:
@@ -308,9 +313,14 @@ def generate_chain_rescue_candidates(
         anchor_breach = _first_breach_minute(instance, baseline, anchor.index, event_cache)
         if anchor_breach is None:
             continue
-        latest_anchor_arrival = min(anchor_breach - instance.unit, end_minute - 1)
-        if latest_anchor_arrival < start_minute:
-            continue
+        # When extending a solution (breach at or before the new window start),
+        # the customer needs service throughout the new window.
+        if anchor_breach <= start_minute + instance.unit:
+            latest_anchor_arrival = end_minute - 1
+        else:
+            latest_anchor_arrival = min(anchor_breach - instance.unit, end_minute - 1)
+            if latest_anchor_arrival < start_minute:
+                continue
 
         for driver in instance.drivers:
             for trailer in instance.trailers:
