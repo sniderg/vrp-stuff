@@ -5,3 +5,6 @@ __pycache__/
 .ruff_cache/
 .DS_Store
 
+# Jupyter
+notebooks/.ipynb_checkpoints/
+
