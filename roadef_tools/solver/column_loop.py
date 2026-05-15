@@ -7,6 +7,7 @@ from ..contest import score_prefix_with_feasibility_tail
 from ..inventory import tank_events
 from ..model import Instance, Shift, Solution
 from ..highs_repair import repair_quantities_with_highs
+from ..route_cache import RouteCache
 from .highs_selector import (
     _candidate_pressure_bonus,
     _inventory_pressure_by_customer,
@@ -20,6 +21,8 @@ from .targeted_rescue import (
     _failing_customers,
     _keep_shifts_started_before,
     generate_chain_rescue_candidates,
+    generate_carryover_rescue_candidates,
+    generate_multi_reload_candidates,
     generate_rescue_candidates,
     normalize_source_loads,
 )
@@ -41,6 +44,10 @@ class ColumnLoopConfig:
     max_candidates_per_iteration: int = 1200
     target_fill_ratio: float = 0.95
     max_pre_service_fill_ratio: float = 0.95
+    multi_reload_columns: bool = False
+    max_multi_reload_per_batch: int = 20
+    normalize_source_loads: bool = True
+    quantity_objective: str = "min-delivered"
 
 
 @dataclass(frozen=True)
@@ -91,7 +98,15 @@ def column_generation_rescue(
             config.end_day,
         )
         generated = _top_diverse_columns(instance, generated, pressure, config)
+        
+        prev_pool_size = len(pool)
         pool = _dedupe_reindex([*pool, *generated])
+        
+        if len(pool) == prev_pool_size and iteration > 0:
+            # Convergence: no new unique columns were added to the pool.
+            # We skip breaking on iteration 0 to ensure at least one full
+            # pass evaluates the newly generated columns.
+            break
 
         selected = select_shifts_with_highs(
             instance,
@@ -101,14 +116,17 @@ def column_generation_rescue(
             end_day=config.end_day,
             pressure_pricing=True,
         )
-        selected = normalize_source_loads(instance, selected)
+        if config.normalize_source_loads:
+            selected = normalize_source_loads(instance, selected)
         repaired, repair_report = repair_quantities_with_highs(
             instance,
             selected,
             score_days=config.end_day,
             feasibility_days=config.end_day,
+            quantity_objective=config.quantity_objective,
         )
-        repaired = normalize_source_loads(instance, repaired)
+        if config.normalize_source_loads:
+            repaired = normalize_source_loads(instance, repaired)
         current = repaired if "Optimal" in repair_report.status or "Feasible" in repair_report.status else selected
         score = score_prefix_with_feasibility_tail(
             instance,
@@ -155,6 +173,8 @@ def _rescue_config(config: ColumnLoopConfig) -> RescueConfig:
         max_chain_length=config.max_chain_length,
         nearest_chain_neighbors=config.nearest_chain_neighbors,
         repair_quantities=False,
+        normalize_source_loads=config.normalize_source_loads,
+        quantity_objective=config.quantity_objective,
     )
 
 
@@ -213,7 +233,14 @@ def _generate_priced_batches(
 
     def generate(batch: list[int]) -> list[Shift]:
         candidates = generate_rescue_candidates(instance, prefix, batch, config=rescue_config)
+        candidates.extend(generate_carryover_rescue_candidates(instance, prefix, batch, config=rescue_config))
         candidates.extend(generate_chain_rescue_candidates(instance, prefix, batch, config=rescue_config))
+        if config.multi_reload_columns:
+            candidates.extend(
+                generate_multi_reload_candidates(instance, prefix, batch, config=rescue_config)[
+                    : config.max_multi_reload_per_batch
+                ]
+            )
         return candidates
 
     if config.batch_workers <= 1:
@@ -243,12 +270,13 @@ def _top_diverse_columns(
     pressure,
     config: ColumnLoopConfig,
 ) -> list[Shift]:
+    route_cache = RouteCache(instance)
     ranked = sorted(
         candidates,
         key=lambda shift: (
             -_candidate_pressure_bonus(instance, shift, pressure),
             -len(_served_customers(instance, shift)),
-            _route_distance(instance, shift),
+            route_cache.shift_distance(shift),
         ),
     )
     selected: list[Shift] = []
@@ -278,16 +306,6 @@ def _served_customers(instance: Instance, shift: Shift) -> tuple[int, ...]:
         for operation in shift.operations
         if operation.quantity > 0 and operation.point in instance.customer_by_point
     )
-
-
-def _route_distance(instance: Instance, shift: Shift) -> float:
-    total = 0.0
-    previous = instance.base_index
-    for operation in shift.operations:
-        total += instance.distance_matrix[previous][operation.point]
-        previous = operation.point
-    total += instance.distance_matrix[previous][instance.base_index]
-    return total
 
 
 def _score_key(score) -> tuple[int, int, int, float]:

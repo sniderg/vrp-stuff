@@ -90,6 +90,8 @@ from .solver.highs_selector import select_shifts_with_highs
 from .solver.rolling_highs import RollingHighsConfig, rolling_highs_select
 from .solver.targeted_rescue import RescueConfig, targeted_rescue
 from .solver.column_loop import ColumnLoopConfig, column_generation_rescue
+from .solver.alns import ALNSConfig, alns_rescue
+from .solver.rolling_cg import RollingCGConfig, robust_rolling_rescue
 
 
 def cmd_highs_select(args: argparse.Namespace) -> int:
@@ -177,6 +179,8 @@ def cmd_targeted_rescue(args: argparse.Namespace) -> int:
         nearest_chain_neighbors=args.nearest_chain_neighbors,
         variable_quantity_columns=args.variable_quantity_columns,
         pressure_pricing=not args.no_pressure_pricing,
+        normalize_source_loads=not args.no_normalize_source_loads,
+        quantity_objective=args.quantity_objective,
     )
     rescued, report = targeted_rescue(instance, baseline, config=config)
     save_solution(rescued, args.output_xml)
@@ -208,6 +212,10 @@ def cmd_column_generation_rescue(args: argparse.Namespace) -> int:
         max_candidates_per_iteration=args.max_candidates_per_iteration,
         target_fill_ratio=args.target_fill_ratio,
         max_pre_service_fill_ratio=args.max_pre_service_fill_ratio,
+        multi_reload_columns=args.multi_reload_columns,
+        max_multi_reload_per_batch=args.max_multi_reload_per_batch,
+        normalize_source_loads=not args.no_normalize_source_loads,
+        quantity_objective=args.quantity_objective,
     )
     solution, steps = column_generation_rescue(instance, baseline, config=config)
     save_solution(solution, args.output_xml)
@@ -219,6 +227,86 @@ def cmd_column_generation_rescue(args: argparse.Namespace) -> int:
             f"{step.selected_extra_shifts},{step.feasible},"
             f"{step.feasibility_errors},{step.hard_violations},"
             f"{step.first_safety_breach_minute}"
+        )
+    return 0
+
+
+def cmd_alns_rescue(args: argparse.Namespace) -> int:
+    instance = load_instance(args.instance_xml)
+    initial = load_solution(args.solution_xml)
+    config = ALNSConfig(
+        start_day=args.start_day,
+        end_day=args.end_day,
+        replace_from_day=args.replace_from_day,
+        iterations=args.iterations,
+        repair_iterations=args.repair_iterations,
+        seed=args.seed,
+        initial_temperature=args.initial_temperature,
+        cooling_rate=args.cooling_rate,
+        max_removed_shifts=args.max_removed_shifts,
+        related_customer_count=args.related_customer_count,
+        time_band_days=args.time_band_days,
+        max_pressure_customers=args.max_pressure_customers,
+        samples_per_customer=args.samples_per_customer,
+        sample_lookback_days=args.sample_lookback_days,
+        max_candidates_per_iteration=args.max_candidates_per_iteration,
+        multi_reload_columns=args.multi_reload_columns,
+        max_multi_reload_per_batch=args.max_multi_reload_per_batch,
+        normalize_source_loads=not args.no_normalize_source_loads,
+        quantity_objective=args.quantity_objective,
+    )
+    solution, steps = alns_rescue(instance, initial, config=config)
+    save_solution(solution, args.output_xml)
+    print(f"Saved ALNS solution to {args.output_xml}")
+    print("iteration,operator,removed_shifts,accepted,new_best,current_errors,current_hard,best_errors,best_hard,first_safety_breach_minute")
+    for step in steps:
+        print(
+            f"{step.iteration},{step.operator},{step.removed_shifts},"
+            f"{step.accepted},{step.new_best},"
+            f"{step.current_errors},{step.current_hard},"
+            f"{step.best_errors},{step.best_hard},"
+            f"{step.first_safety_breach_minute}"
+        )
+    return 0
+
+
+def cmd_robust_rolling_rescue(args: argparse.Namespace) -> int:
+    instance = load_instance(args.instance_xml)
+    baseline = load_solution(args.solution_xml)
+    config = RollingCGConfig(
+        horizon_days=args.horizon_days,
+        commit_days=args.commit_days,
+        lookahead_days=args.lookahead_days,
+        n_scenarios=args.n_scenarios,
+        scenario_seed=args.scenario_seed,
+        plan_sigma=args.plan_sigma,
+        buffer_sigma=args.buffer_sigma,
+        commit_percentile=args.commit_percentile,
+        plan_percentile=args.plan_percentile,
+        buffer_percentile=args.buffer_percentile,
+        cg_iterations=args.cg_iterations,
+        max_pressure_customers=args.max_pressure_customers,
+        samples_per_customer=args.samples_per_customer,
+        max_chain_length=args.max_chain_length,
+        nearest_chain_neighbors=args.nearest_chain_neighbors,
+        max_candidates_per_iteration=args.max_candidates_per_iteration,
+        target_fill_ratio=args.target_fill_ratio,
+        max_pre_service_fill_ratio=args.max_pre_service_fill_ratio,
+        normalize_source_loads=not args.no_normalize_source_loads,
+        quantity_objective=args.quantity_objective,
+    )
+    solution, steps = robust_rolling_rescue(
+        instance, baseline, config=config, progress=print
+    )
+    save_solution(solution, args.output_xml)
+    print(f"Saved robust rolling solution to {args.output_xml}")
+    print("round,commit_start,commit_end,solve_end,cg_iters,feasible,errors,hard,first_breach,committed_shifts,total_shifts")
+    for step in steps:
+        print(
+            f"{step.round_index},{step.commit_start_day},{step.commit_end_day},"
+            f"{step.solve_end_day},{step.cg_iterations},{step.feasible},"
+            f"{step.feasibility_errors},{step.hard_violations},"
+            f"{step.first_safety_breach_minute},{step.committed_shifts},{step.total_shifts}"
         )
     return 0
 
@@ -657,15 +745,7 @@ def cmd_evaluate(args: argparse.Namespace) -> int:
     solution_path = Path(args.solution_xml)
     instance = load_instance(instance_path)
     solution = load_solution(solution_path)
-    checker_exe = (
-        Path(__file__).resolve().parent.parent
-        / "roadef_2016_data"
-        / "checker_v2"
-        / "Challenge_Roadef_EURO_Checker_V2"
-        / "bin"
-        / "Release"
-        / "IRP_Roadef_Challenge_Checker.exe"
-    )
+    checker_exe = _default_checker_exe(instance_path)
     evaluation = evaluate_solution(
         instance,
         solution,
@@ -843,6 +923,28 @@ def cmd_contest_prune(args: argparse.Namespace) -> int:
     return 0
 
 
+def _default_checker_exe(instance_path: Path) -> Path:
+    data_dir = Path(__file__).resolve().parent.parent / "roadef_2016_data"
+    if "_ConvertedTo_V2" not in instance_path.name and "Instance_V_1." in instance_path.name:
+        return (
+            data_dir
+            / "checker_v1_1"
+            / "Checker V1 v1.1.0.0"
+            / "Challenge_Roadef_EURO_Checker_V1"
+            / "bin"
+            / "Release"
+            / "IRP_Roadef_Challenge_Checker.exe"
+        )
+    return (
+        data_dir
+        / "checker_v2"
+        / "Challenge_Roadef_EURO_Checker_V2"
+        / "bin"
+        / "Release"
+        / "IRP_Roadef_Challenge_Checker.exe"
+    )
+
+
 def cmd_contest_highs_repair(args: argparse.Namespace) -> int:
     instance = load_instance(args.instance_xml)
     solution = load_solution(args.solution_xml)
@@ -852,6 +954,7 @@ def cmd_contest_highs_repair(args: argparse.Namespace) -> int:
         score_days=args.score_days,
         feasibility_days=args.feasibility_days,
         ignore_tail_call_ins=args.ignore_tail_call_ins,
+        quantity_objective=args.quantity_objective,
     )
     save_solution(repaired, args.output_xml)
     print(f"wrote,{args.output_xml}")
@@ -1192,6 +1295,11 @@ def build_parser() -> argparse.ArgumentParser:
     highs_repair.add_argument("--score-days", type=int, required=True)
     highs_repair.add_argument("--feasibility-days", type=int)
     highs_repair.add_argument("--ignore-tail-call-ins", action="store_true")
+    highs_repair.add_argument(
+        "--quantity-objective",
+        choices=("min-delivered", "max-delivered"),
+        default="min-delivered",
+    )
     highs_repair.add_argument("--fail-on-infeasible", action="store_true")
     highs_repair.set_defaults(func=cmd_contest_highs_repair)
 
@@ -1240,6 +1348,12 @@ def build_parser() -> argparse.ArgumentParser:
     targeted_rescue_cmd.add_argument("--nearest-chain-neighbors", type=int, default=4)
     targeted_rescue_cmd.add_argument("--variable-quantity-columns", action="store_true")
     targeted_rescue_cmd.add_argument("--no-pressure-pricing", action="store_true")
+    targeted_rescue_cmd.add_argument("--no-normalize-source-loads", action="store_true")
+    targeted_rescue_cmd.add_argument(
+        "--quantity-objective",
+        choices=("min-delivered", "max-delivered"),
+        default="min-delivered",
+    )
     targeted_rescue_cmd.set_defaults(func=cmd_targeted_rescue)
 
     column_loop = subparsers.add_parser("column-generation-rescue")
@@ -1260,7 +1374,74 @@ def build_parser() -> argparse.ArgumentParser:
     column_loop.add_argument("--max-candidates-per-iteration", type=int, default=1200)
     column_loop.add_argument("--target-fill-ratio", type=float, default=0.95)
     column_loop.add_argument("--max-pre-service-fill-ratio", type=float, default=0.95)
+    column_loop.add_argument("--multi-reload-columns", action="store_true")
+    column_loop.add_argument("--max-multi-reload-per-batch", type=int, default=20)
+    column_loop.add_argument("--no-normalize-source-loads", action="store_true")
+    column_loop.add_argument(
+        "--quantity-objective",
+        choices=("min-delivered", "max-delivered"),
+        default="min-delivered",
+    )
     column_loop.set_defaults(func=cmd_column_generation_rescue)
+
+    alns_cmd = subparsers.add_parser("alns-rescue")
+    alns_cmd.add_argument("instance_xml", type=Path)
+    alns_cmd.add_argument("solution_xml", type=Path)
+    alns_cmd.add_argument("output_xml", type=Path)
+    alns_cmd.add_argument("--start-day", type=int, default=0)
+    alns_cmd.add_argument("--end-day", type=int, default=21)
+    alns_cmd.add_argument("--replace-from-day", type=int, default=3)
+    alns_cmd.add_argument("--iterations", type=int, default=20)
+    alns_cmd.add_argument("--repair-iterations", type=int, default=2)
+    alns_cmd.add_argument("--seed", type=int, default=0)
+    alns_cmd.add_argument("--initial-temperature", type=float, default=5000.0)
+    alns_cmd.add_argument("--cooling-rate", type=float, default=0.92)
+    alns_cmd.add_argument("--max-removed-shifts", type=int, default=8)
+    alns_cmd.add_argument("--related-customer-count", type=int, default=8)
+    alns_cmd.add_argument("--time-band-days", type=int, default=3)
+    alns_cmd.add_argument("--max-pressure-customers", type=int, default=12)
+    alns_cmd.add_argument("--samples-per-customer", type=int, default=6)
+    alns_cmd.add_argument("--sample-lookback-days", type=int, default=14)
+    alns_cmd.add_argument("--max-candidates-per-iteration", type=int, default=700)
+    alns_cmd.add_argument("--multi-reload-columns", action="store_true")
+    alns_cmd.add_argument("--max-multi-reload-per-batch", type=int, default=8)
+    alns_cmd.add_argument("--no-normalize-source-loads", action="store_true")
+    alns_cmd.add_argument(
+        "--quantity-objective",
+        choices=("min-delivered", "max-delivered"),
+        default="min-delivered",
+    )
+    alns_cmd.set_defaults(func=cmd_alns_rescue)
+
+    rolling_cg = subparsers.add_parser("robust-rolling-rescue")
+    rolling_cg.add_argument("instance_xml", type=Path)
+    rolling_cg.add_argument("solution_xml", type=Path)
+    rolling_cg.add_argument("output_xml", type=Path)
+    rolling_cg.add_argument("--horizon-days", type=int, default=30)
+    rolling_cg.add_argument("--commit-days", type=int, default=7)
+    rolling_cg.add_argument("--lookahead-days", type=int, default=7)
+    rolling_cg.add_argument("--n-scenarios", type=int, default=20)
+    rolling_cg.add_argument("--scenario-seed", type=int, default=42)
+    rolling_cg.add_argument("--plan-sigma", type=float, default=0.15)
+    rolling_cg.add_argument("--buffer-sigma", type=float, default=0.30)
+    rolling_cg.add_argument("--commit-percentile", type=float, default=50.0)
+    rolling_cg.add_argument("--plan-percentile", type=float, default=75.0)
+    rolling_cg.add_argument("--buffer-percentile", type=float, default=90.0)
+    rolling_cg.add_argument("--cg-iterations", type=int, default=5)
+    rolling_cg.add_argument("--max-pressure-customers", type=int, default=12)
+    rolling_cg.add_argument("--samples-per-customer", type=int, default=8)
+    rolling_cg.add_argument("--max-chain-length", type=int, default=4)
+    rolling_cg.add_argument("--nearest-chain-neighbors", type=int, default=10)
+    rolling_cg.add_argument("--max-candidates-per-iteration", type=int, default=1200)
+    rolling_cg.add_argument("--target-fill-ratio", type=float, default=0.95)
+    rolling_cg.add_argument("--max-pre-service-fill-ratio", type=float, default=0.95)
+    rolling_cg.add_argument("--no-normalize-source-loads", action="store_true")
+    rolling_cg.add_argument(
+        "--quantity-objective",
+        choices=("min-delivered", "max-delivered"),
+        default="min-delivered",
+    )
+    rolling_cg.set_defaults(func=cmd_robust_rolling_rescue)
 
     mds_map = subparsers.add_parser("mds-map")
 

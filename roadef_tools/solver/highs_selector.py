@@ -118,6 +118,7 @@ def select_shifts_with_highs(
         )
     _add_order_coverage_constraints(highs, instance, prefix, candidates, x_indices)
 
+    highs.setOptionValue("time_limit", 300.0)
     highs.run()
     
     status = highs.modelStatusToString(highs.getModelStatus())

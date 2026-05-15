@@ -6,7 +6,6 @@ import numpy as np
 
 from .contest import score_prefix_with_feasibility_tail, truncate_solution
 from .model import Instance, Solution
-from .solver.greedy import _cap_source_loads
 
 
 EPSILON = 1e-6
@@ -40,6 +39,16 @@ class _DeliveryVariable:
     max_quantity: float
 
 
+@dataclass(frozen=True)
+class _SourceLoadVariable:
+    shift_index: int
+    operation_index: int
+    point: int
+    arrival: int
+    original_quantity: float
+    max_quantity: float
+
+
 def repair_with_highs_selection(
     instance: Instance,
     solution: Solution,
@@ -47,6 +56,7 @@ def repair_with_highs_selection(
     score_days: int,
     feasibility_days: int | None = None,
     ignore_tail_call_ins: bool = False,
+    quantity_objective: str = "min-delivered",
 ) -> tuple[Solution, HighsRepairReport]:
     try:
         import highspy
@@ -63,8 +73,9 @@ def repair_with_highs_selection(
         ignore_tail_call_ins=ignore_tail_call_ins,
     )
     
-    # Identify variables: all deliveries to VMI customers
+    # Identify variables: deliveries to VMI customers and source load amounts.
     variables: list[_DeliveryVariable] = []
+    load_variables: list[_SourceLoadVariable] = []
     for shift in working.shifts:
         for op_index, op in enumerate(shift.operations):
             customer = instance.customer_by_point.get(op.point)
@@ -84,38 +95,69 @@ def repair_with_highs_selection(
                         max_quantity=customer.capacity,
                     )
                 )
+                continue
+            source = instance.source_by_point.get(op.point)
+            if source and op.quantity < -EPSILON:
+                trailer = instance.trailers[shift.trailer]
+                load_variables.append(
+                    _SourceLoadVariable(
+                        shift_index=shift.index,
+                        operation_index=op_index,
+                        point=op.point,
+                        arrival=op.arrival,
+                        original_quantity=-op.quantity,
+                        max_quantity=trailer.capacity,
+                    )
+                )
 
     highs = highspy.Highs()
     highs.setOptionValue("output_flag", False)
     inf = highspy.kHighsInf
 
-    # q_i: quantity of delivery i
-    # z_i: binary selection of delivery i
-    # Objective: Minimize total quantity (proxy for cost/overfill) + small penalty for dropping
-    # Actually, let's try to maximize quantity delivered while staying within capacity.
-    # No, better: minimize sum(q_i) + sum(z_i * -1000) to encourage keeping operations
-    # but staying within inventory bounds.
-    
+    if quantity_objective not in {"min-delivered", "max-delivered"}:
+        raise ValueError("quantity_objective must be 'min-delivered' or 'max-delivered'")
+
     q_indices = []
     z_indices = []
+    load_indices = []
     col_count = 0
-    
+
     for var in variables:
         q_idx = col_count
-        highs.addCol(1.0, 0.0, var.max_quantity, 0, np.array([], dtype=np.int32), np.array([], dtype=np.float64))
+        if quantity_objective == "max-delivered":
+            q_cost = -1.0
+            q_lower = var.min_quantity
+        else:
+            q_cost = 1.0
+            q_lower = 0.0
+        highs.addCol(q_cost, q_lower, var.max_quantity, 0, np.array([], dtype=np.int32), np.array([], dtype=np.float64))
         q_indices.append(q_idx)
         col_count += 1
-        
-        z_idx = col_count
-        highs.addCol(-1000.0, 0.0, 1.0, 0, np.array([], dtype=np.int32), np.array([], dtype=np.float64))
-        highs.changeColIntegrality(z_idx, highspy.HighsVarType.kInteger)
-        z_indices.append(z_idx)
+
+        if quantity_objective == "min-delivered":
+            z_idx = col_count
+            highs.addCol(-1000.0, 0.0, 1.0, 0, np.array([], dtype=np.int32), np.array([], dtype=np.float64))
+            highs.changeColIntegrality(z_idx, highspy.HighsVarType.kInteger)
+            z_indices.append(z_idx)
+            col_count += 1
+
+            # q_i <= max_q * z_i
+            highs.addRow(-inf, 0.0, 2, np.array([q_idx, z_idx], dtype=np.int32), np.array([1.0, -var.max_quantity], dtype=np.float64))
+            # q_i >= min_q * z_i
+            highs.addRow(0.0, inf, 2, np.array([q_idx, z_idx], dtype=np.int32), np.array([1.0, -var.min_quantity], dtype=np.float64))
+
+    for var in load_variables:
+        load_idx = col_count
+        highs.addCol(
+            0.0,
+            0.0,
+            var.max_quantity,
+            0,
+            np.array([], dtype=np.int32),
+            np.array([], dtype=np.float64),
+        )
+        load_indices.append(load_idx)
         col_count += 1
-        
-        # q_i <= max_q * z_i
-        highs.addRow(-inf, 0.0, 2, np.array([q_idx, z_idx], dtype=np.int32), np.array([1.0, -var.max_quantity], dtype=np.float64))
-        # q_i >= min_q * z_i
-        highs.addRow(0.0, inf, 2, np.array([q_idx, z_idx], dtype=np.int32), np.array([1.0, -var.min_quantity], dtype=np.float64))
 
     # Inventory constraints
     horizon = _repair_horizon(instance, feasibility_days)
@@ -139,36 +181,31 @@ def repair_with_highs_selection(
             upper = customer.capacity - customer.initial_tank_quantity + cumulative_demand
             highs.addRow(lower, upper, len(indices), np.array(indices, dtype=np.int32), np.ones(len(indices), dtype=np.float64))
 
-    # Trailer capacity constraints
-    # For each shift, we need to ensure that cumulative deliveries <= initial_load + cumulative_loads
-    # Since we don't change loads, we can just say:
-    # sum(selected_deliveries) <= original_total_deliveries + trailer_remaining_capacity
-    shift_to_trailer = {shift.index: shift.trailer for shift in working.shifts}
-    by_shift: dict[int, list[tuple[int, _DeliveryVariable]]] = {}
-    for i, v in enumerate(variables):
-        by_shift.setdefault(v.shift_index, []).append((i, v))
-        
-    for shift_index, shift_vars in by_shift.items():
-        trailer_id = shift_to_trailer[shift_index]
-        trailer = instance.trailers[trailer_id]
-        # This is a simplification: we don't want to exceed the total load available in the shift.
-        # Original total delivered in this shift:
-        original_total = sum(v.original_quantity for _, v in shift_vars)
-        # Assuming source loads are not changed, we can't deliver more than what was planned + what's left.
-        # We'll need to calculate the actual remaining capacity at the end of the shift.
-        # For now, let's just cap the total deliveries to original_total + 10% or something?
-        # Better: let's not cap it if we can't do it accurately, but stay safe.
-        indices = [q_indices[idx] for idx, _ in shift_vars]
-        highs.addRow(0.0, original_total, len(indices), np.array(indices, dtype=np.int32), np.ones(len(indices), dtype=np.float64))
+    _add_trailer_load_constraints(
+        instance,
+        working,
+        variables,
+        q_indices,
+        highs,
+        load_variables=load_variables,
+        load_indices=load_indices,
+    )
 
+    highs.setOptionValue("time_limit", 300.0)
     highs.run()
     status = highs.modelStatusToString(highs.getModelStatus())
     repaired = working
     if "Optimal" in status or "Feasible" in status:
         values = highs.getSolution().col_value
         q_values = [values[i] for i in q_indices]
-        repaired = _apply_quantities(working, variables, q_values)
-        repaired = _cap_loads(instance, repaired)
+        load_values = [values[i] for i in load_indices]
+        repaired = _apply_quantities(
+            working,
+            variables,
+            q_values,
+            load_variables=load_variables,
+            load_values=load_values,
+        )
 
     after = score_prefix_with_feasibility_tail(
         instance,
@@ -178,7 +215,7 @@ def repair_with_highs_selection(
         ignore_tail_call_ins=ignore_tail_call_ins,
     )
     return repaired, HighsRepairReport(
-        status=status, variables=len(variables)*2, constraints=highs.getNumRow(),
+        status=status, variables=highs.getNumCol(), constraints=highs.getNumRow(),
         before_feasible=before.feasible, after_feasible=after.feasible,
         before_delivered=before.scored_delivered_quantity, after_delivered=after.scored_delivered_quantity,
         before_cost=before.scored_estimated_cost, after_cost=after.scored_estimated_cost,
@@ -192,6 +229,7 @@ def repair_quantities_with_highs(
     score_days: int,
     feasibility_days: int | None = None,
     ignore_tail_call_ins: bool = False,
+    quantity_objective: str = "min-delivered",
 ) -> tuple[Solution, HighsRepairReport]:
     return repair_with_highs_selection(
         instance,
@@ -199,7 +237,63 @@ def repair_quantities_with_highs(
         score_days=score_days,
         feasibility_days=feasibility_days,
         ignore_tail_call_ins=ignore_tail_call_ins,
+        quantity_objective=quantity_objective,
     )
+
+
+def _add_trailer_load_constraints(
+    instance: Instance,
+    solution: Solution,
+    variables: list[_DeliveryVariable],
+    q_indices: list[int],
+    highs,
+    *,
+    load_variables: list[_SourceLoadVariable] | None = None,
+    load_indices: list[int] | None = None,
+) -> None:
+    q_by_operation = {
+        (variable.shift_index, variable.operation_index): q_indices[index]
+        for index, variable in enumerate(variables)
+    }
+    load_by_operation = {
+        (variable.shift_index, variable.operation_index): (load_indices or [])[index]
+        for index, variable in enumerate(load_variables or [])
+    }
+    shifts_by_trailer: dict[int, list] = {}
+    for shift in solution.shifts:
+        shifts_by_trailer.setdefault(shift.trailer, []).append(shift)
+
+    for trailer in instance.trailers:
+        load_constant = trailer.initial_quantity
+        variable_columns: list[int] = []
+        coefficients: list[float] = []
+        shifts = sorted(
+            shifts_by_trailer.get(trailer.index, []),
+            key=lambda shift: (shift.start, shift.index),
+        )
+        for shift in shifts:
+            for operation_index, operation in enumerate(shift.operations):
+                key = (shift.index, operation_index)
+                if key in q_by_operation:
+                    variable_columns.append(q_by_operation[key])
+                    coefficients.append(-1.0)
+                elif key in load_by_operation:
+                    variable_columns.append(load_by_operation[key])
+                    coefficients.append(1.0)
+                elif operation.point in instance.source_by_point and operation.quantity < -EPSILON:
+                    load_constant += -operation.quantity
+                elif operation.quantity > EPSILON:
+                    load_constant -= operation.quantity
+
+                if not variable_columns:
+                    continue
+                highs.addRow(
+                    -load_constant,
+                    trailer.capacity - load_constant,
+                    len(variable_columns),
+                    np.array(variable_columns, dtype=np.int32),
+                    np.array(coefficients, dtype=np.float64),
+                )
 
 
 def _repair_horizon(instance: Instance, feasibility_days: int | None) -> int:
@@ -243,15 +337,26 @@ def _apply_quantities(
     solution: Solution,
     variables: list[_DeliveryVariable],
     values,
+    *,
+    load_variables: list[_SourceLoadVariable] | None = None,
+    load_values=None,
 ) -> Solution:
     by_ref = {
         (variable.shift_index, variable.operation_index): max(0.0, float(values[index]))
         for index, variable in enumerate(variables)
     }
+    source_by_ref = {
+        (variable.shift_index, variable.operation_index): max(0.0, float(load_values[index]))
+        for index, variable in enumerate(load_variables or [])
+    }
     shifts = []
     for shift in solution.shifts:
         operations = []
         for operation_index, operation in enumerate(shift.operations):
+            source_key = (shift.index, operation_index)
+            if source_key in source_by_ref:
+                operations.append(replace(operation, quantity=-source_by_ref[source_key]))
+                continue
             key = (shift.index, operation_index)
             if key not in by_ref:
                 operations.append(operation)
@@ -259,16 +364,6 @@ def _apply_quantities(
             quantity = by_ref[key]
             if quantity > EPSILON:
                 operations.append(replace(operation, quantity=quantity))
-        shifts.append(replace(shift, operations=tuple(operations)))
+        if operations:
+            shifts.append(replace(shift, operations=tuple(operations)))
     return Solution(shifts=tuple(shifts))
-
-
-def _cap_loads(instance: Instance, solution: Solution) -> Solution:
-    operations = [list(shift.operations) for shift in solution.shifts]
-    capped = _cap_source_loads(instance, list(solution.shifts), operations)
-    return Solution(
-        shifts=tuple(
-            replace(shift, operations=tuple(shift_operations))
-            for shift, shift_operations in zip(solution.shifts, capped)
-        )
-    )
