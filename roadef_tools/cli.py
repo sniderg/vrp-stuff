@@ -250,10 +250,13 @@ def cmd_alns_rescue(args: argparse.Namespace) -> int:
         samples_per_customer=args.samples_per_customer,
         sample_lookback_days=args.sample_lookback_days,
         max_candidates_per_iteration=args.max_candidates_per_iteration,
+        target_fill_ratio=args.target_fill_ratio,
+        nearest_chain_neighbors=args.nearest_chain_neighbors,
         multi_reload_columns=args.multi_reload_columns,
         max_multi_reload_per_batch=args.max_multi_reload_per_batch,
         normalize_source_loads=not args.no_normalize_source_loads,
         quantity_objective=args.quantity_objective,
+        output_xml=str(args.output_xml),
     )
     solution, steps = alns_rescue(instance, initial, config=config)
     save_solution(solution, args.output_xml)
@@ -291,13 +294,20 @@ def cmd_robust_rolling_rescue(args: argparse.Namespace) -> int:
         nearest_chain_neighbors=args.nearest_chain_neighbors,
         max_candidates_per_iteration=args.max_candidates_per_iteration,
         target_fill_ratio=args.target_fill_ratio,
+        multi_reload_columns=args.multi_reload_columns,
         max_pre_service_fill_ratio=args.max_pre_service_fill_ratio,
         normalize_source_loads=not args.no_normalize_source_loads,
         quantity_objective=args.quantity_objective,
+        capacity_buffer=args.capacity_buffer,
     )
     solution, steps = robust_rolling_rescue(
         instance, baseline, config=config, progress=print
     )
+    
+    # Final Driver Rebalancing Pass
+    from .solver.highs_selector import rebalance_drivers
+    print("Rebalancing driver workloads...")
+    solution = rebalance_drivers(instance, solution)
     save_solution(solution, args.output_xml)
     print(f"Saved robust rolling solution to {args.output_xml}")
     print("round,commit_start,commit_end,solve_end,cg_iters,feasible,errors,hard,first_breach,committed_shifts,total_shifts")
@@ -1403,6 +1413,8 @@ def build_parser() -> argparse.ArgumentParser:
     alns_cmd.add_argument("--samples-per-customer", type=int, default=6)
     alns_cmd.add_argument("--sample-lookback-days", type=int, default=14)
     alns_cmd.add_argument("--max-candidates-per-iteration", type=int, default=700)
+    alns_cmd.add_argument("--target-fill-ratio", type=float, default=0.95)
+    alns_cmd.add_argument("--nearest-chain-neighbors", type=int, default=4)
     alns_cmd.add_argument("--multi-reload-columns", action="store_true")
     alns_cmd.add_argument("--max-multi-reload-per-batch", type=int, default=8)
     alns_cmd.add_argument("--no-normalize-source-loads", action="store_true")
@@ -1434,13 +1446,11 @@ def build_parser() -> argparse.ArgumentParser:
     rolling_cg.add_argument("--nearest-chain-neighbors", type=int, default=10)
     rolling_cg.add_argument("--max-candidates-per-iteration", type=int, default=1200)
     rolling_cg.add_argument("--target-fill-ratio", type=float, default=0.95)
+    rolling_cg.add_argument("--multi-reload-columns", action="store_true")
     rolling_cg.add_argument("--max-pre-service-fill-ratio", type=float, default=0.95)
     rolling_cg.add_argument("--no-normalize-source-loads", action="store_true")
-    rolling_cg.add_argument(
-        "--quantity-objective",
-        choices=("min-delivered", "max-delivered"),
-        default="min-delivered",
-    )
+    rolling_cg.add_argument("--quantity-objective", choices=("min-delivered", "max-delivered"), default="min-delivered")
+    rolling_cg.add_argument("--capacity-buffer", type=float, default=0.05)
     rolling_cg.set_defaults(func=cmd_robust_rolling_rescue)
 
     mds_map = subparsers.add_parser("mds-map")

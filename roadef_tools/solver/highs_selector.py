@@ -69,11 +69,14 @@ def select_shifts_with_highs(
         )
         # Reward coverage and route density more than raw volume. Early top-up chains
         # often carry smaller quantities but are exactly what prevents later cliffs.
+        # We add a 10,000 flat shift penalty to aggressively force shift consolidation,
+        # and scale down the customer coverage rewards.
         obj_coeff = (
             travel_cost
-            - (8_000.0 * len(served_customers))
-            - (3_000.0 * max(0, len(served_customers) - 1))
-            - (25_000.0 * order_stops)
+            + 10_000.0
+            - (1_000.0 * len(served_customers))
+            - (500.0 * max(0, len(served_customers) - 1))
+            - (1_000.0 * order_stops)
             - pressure_bonus
         )
         
@@ -426,8 +429,8 @@ def _add_inventory_constraints_with_slacks(
             
             highs.addRow(rhs_lower, inf, len(indices), np.array(indices, dtype=np.int32), np.array(qtys, dtype=np.float64))
 
-            # Overfill slack (1M penalty)
-            highs.addCol(1_000_000.0, 0.0, inf, 0, np.array([], dtype=np.int32), np.array([], dtype=np.float64))
+            # Overfill slack (1B penalty) - Physical impossibility, must be avoided at all costs.
+            highs.addCol(1_000_000_000.0, 0.0, inf, 0, np.array([], dtype=np.int32), np.array([], dtype=np.float64))
             slack_overfill_idx = highs.getNumCol() - 1
             
             indices_u = [q_indices[variable_index] for variable_index in relevant] + [slack_overfill_idx]
@@ -495,7 +498,7 @@ def _add_fixed_inventory_constraints_with_slacks(
             qtys = [relevant_shifts[shift_index] for shift_index in relevant_shifts] + [1.0]
             highs.addRow(rhs_lower, inf, len(indices), np.array(indices, dtype=np.int32), np.array(qtys, dtype=np.float64))
 
-            highs.addCol(1_000_000.0, 0.0, inf, 0, np.array([], dtype=np.int32), np.array([], dtype=np.float64))
+            highs.addCol(1_000_000_000.0, 0.0, inf, 0, np.array([], dtype=np.int32), np.array([], dtype=np.float64))
             slack_overfill_idx = highs.getNumCol() - 1
             indices_u = [x_indices[shift_index] for shift_index in relevant_shifts] + [slack_overfill_idx]
             qtys_u = [relevant_shifts[shift_index] for shift_index in relevant_shifts] + [-1.0]
@@ -610,3 +613,86 @@ def _inventory_checkpoint_steps(
         customer_id: tuple(sorted(steps))
         for customer_id, steps in by_customer.items()
     }
+def rebalance_drivers(instance: Instance, solution: Solution, threshold_hrs: float = 12.0) -> Solution:
+    """Attempts to swap shifts from overworked drivers to idle, compatible drivers."""
+    new_shifts = list(solution.shifts)
+    drivers = instance.drivers
+    
+    # 1. Calculate daily hours per driver
+    driver_days: dict[int, dict[int, float]] = {} # driver_idx -> day -> hours
+    for s in new_shifts:
+        last_op = s.operations[-1]
+        setup = instance.setup_time_for_point(last_op.point)
+        duration = (last_op.arrival + setup - s.start) / 60.0
+        day = s.start // 1440
+        d_map = driver_days.setdefault(s.driver, {})
+        d_map[day] = d_map.get(day, 0.0) + duration
+
+    # 2. Identify overworked drivers and candidate shifts for swapping
+    for d_idx, days in driver_days.items():
+        for day, hours in days.items():
+            if hours <= threshold_hrs:
+                continue
+                
+            # This driver is overworked on this day. Try to offload a shift.
+            overworked_shifts = [s for s in new_shifts if s.driver == d_idx and (s.start // 1440) == day]
+            # Sort by duration descending to offload the biggest problem
+            overworked_shifts.sort(key=lambda x: (x.operations[-1].arrival - x.start), reverse=True)
+            
+            for s_to_swap in overworked_shifts:
+                # 3. Find a Shadow Driver
+                # A shadow driver must be:
+                # - Compatible with the trailer
+                # - Idle during the shift window (plus rest buffer)
+                # - Not overworked themselves
+                
+                shift_duration = (s_to_swap.operations[-1].arrival + instance.setup_time_for_point(s_to_swap.operations[-1].point) - s_to_swap.start)
+                
+                best_shadow = None
+                for shadow_idx, shadow in enumerate(drivers):
+                    if shadow_idx == d_idx:
+                        continue
+                    
+                    # Check trailer compatibility
+                    if s_to_swap.trailer not in shadow.trailer_ids:
+                        continue
+                        
+                    # Check if idle during this shift window
+                    shadow_shifts = [s for s in new_shifts if s.driver == shadow_idx]
+                    conflict = False
+                    for existing in shadow_shifts:
+                        # Simple overlap check with 11h rest buffer (660 mins)
+                        REST = 660
+                        s_end = s_to_swap.operations[-1].arrival + instance.setup_time_for_point(s_to_swap.operations[-1].point)
+                        e_end = existing.operations[-1].arrival + instance.setup_time_for_point(existing.operations[-1].point)
+                        
+                        if not (s_end + REST <= existing.start or e_end + REST <= s_to_swap.start):
+                            conflict = True
+                            break
+                    
+                    if conflict:
+                        continue
+                        
+                    # Check if shadow would become overworked
+                    shadow_day_hours = driver_days.get(shadow_idx, {}).get(day, 0.0)
+                    if shadow_day_hours + (shift_duration / 60.0) > threshold_hrs:
+                        continue
+                        
+                    best_shadow = shadow_idx
+                    break
+                
+                if best_shadow is not None:
+                    # Perform the swap!
+                    shift_idx_in_list = next(i for i, s in enumerate(new_shifts) if s.index == s_to_swap.index)
+                    new_shifts[shift_idx_in_list] = replace(s_to_swap, driver=best_shadow)
+                    
+                    # Update local tracking
+                    driver_days[d_idx][day] -= (shift_duration / 60.0)
+                    shadow_day_map = driver_days.setdefault(best_shadow, {})
+                    shadow_day_map[day] = shadow_day_map.get(day, 0.0) + (shift_duration / 60.0)
+                    
+                    # If we are below threshold, stop offloading for this day
+                    if driver_days[d_idx][day] <= threshold_hrs:
+                        break
+
+    return Solution(shifts=tuple(new_shifts))
