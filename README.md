@@ -43,12 +43,30 @@ roadef_tools/
     ├── targeted_rescue.py # Rescue candidate generation
     ├── highs_selector.py  # HiGHS shift selection (master problem)
     ├── candidate_gen.py   # Route candidate generation
+    ├── rolling_cg.py      # Rolling commit-and-advance with scenario hedging
+    ├── scenario.py        # Scenario forecasting and distribution tools
     ├── rolling_highs.py   # Rolling horizon HiGHS selection
     ├── cluster_greedy.py  # Cluster-aware greedy constructor
     └── greedy.py          # Basic greedy constructor
 ```
 
 ## Key Commands
+
+### Week-ahead CI Rescue (Long-horizon planning under uncertainty)
+
+Plans and optimizes routing sequences over a long-horizon lookahead (e.g. 21 or 30 days) using an external forecast confidence interval (CI) file. Commits and outputs only the near-term week (Day 0..7) to guarantee physical feasibility without tail-end overfitting.
+
+During the solve, the progress logger displays real-time milestone tags, cost/logistic ratio KPIs, and remaining Days of Inventory (DOI) danger alerts:
+
+```bash
+uv run python -m roadef_tools.cli week-ahead-ci-rescue \
+  roadef_2016_data/set_B/Instances_B_V25-11042016/V2.18.xml \
+  roadef_2016_data/hust_smart_results/2.18_day0_14_markov_probe.xml \
+  /private/tmp/v218_week_ci.csv \
+  output.xml \
+  --planning-horizon-days 30 \
+  --lookahead-days 21
+```
 
 ### Column-generation rescue (current best approach)
 
