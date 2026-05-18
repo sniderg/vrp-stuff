@@ -50,8 +50,8 @@ def solve_with_gurobi_if_requested(
                 def var_key(v):
                     name = v.VarName
                     if (name.startswith("C") or name.startswith("c")) and name[1:].isdigit():
-                        return int(name[1:])
-                    return name
+                        return (0, int(name[1:]))
+                    return (1, name)
                 vars_sorted = sorted(vars_list, key=var_key)
                 col_values = [v.X for v in vars_sorted]
                 
