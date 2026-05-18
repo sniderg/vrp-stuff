@@ -137,7 +137,8 @@ def repair_with_highs_selection(
 
         if quantity_objective == "min-delivered":
             z_idx = col_count
-            highs.addCol(-1000.0, 0.0, 1.0, 0, np.array([], dtype=np.int32), np.array([], dtype=np.float64))
+            z_lower = 1.0 if instance.customer_by_point[var.point].layover_customer else 0.0
+            highs.addCol(-1000.0, z_lower, 1.0, 0, np.array([], dtype=np.int32), np.array([], dtype=np.float64))
             highs.changeColIntegrality(z_idx, highspy.HighsVarType.kInteger)
             z_indices.append(z_idx)
             col_count += 1
