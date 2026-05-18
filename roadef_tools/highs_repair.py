@@ -231,11 +231,21 @@ def repair_with_highs_selection(
         )
 
     highs.setOptionValue("time_limit", 300.0)
-    highs.run()
-    status = highs.modelStatusToString(highs.getModelStatus())
+    
+    from .solver.gurobi_bridge import solve_with_gurobi_if_requested
+    status, values, solved_by_gurobi = solve_with_gurobi_if_requested(highs, time_limit=300.0)
+    
+    if solved_by_gurobi:
+        print(f"Gurobi Status: {status}")
+    else:
+        highs.run()
+        status = highs.modelStatusToString(highs.getModelStatus())
+        print(f"HiGHS Status: {status}")
+        if "Optimal" in status or "Feasible" in status:
+            values = highs.getSolution().col_value
+            
     repaired = working
-    if "Optimal" in status or "Feasible" in status:
-        values = highs.getSolution().col_value
+    if ("Optimal" in status or "Feasible" in status) and values is not None:
         q_values = [values[i] for i in q_indices]
         load_values = [values[i] for i in load_indices]
         repaired = _apply_quantities(

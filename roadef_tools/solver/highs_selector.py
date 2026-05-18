@@ -135,14 +135,21 @@ def select_shifts_with_highs(
     _add_order_coverage_constraints(highs, instance, prefix, candidates, x_indices)
 
     highs.setOptionValue("time_limit", 300.0)
-    highs.run()
     
-    status = highs.modelStatusToString(highs.getModelStatus())
-    print(f"HiGHS Status: {status}")
+    from .gurobi_bridge import solve_with_gurobi_if_requested
+    status, values, solved_by_gurobi = solve_with_gurobi_if_requested(highs, time_limit=300.0)
+    
+    if solved_by_gurobi:
+        print(f"Gurobi Status: {status}")
+    else:
+        highs.run()
+        status = highs.modelStatusToString(highs.getModelStatus())
+        print(f"HiGHS Status: {status}")
+        if "Optimal" in status or "Feasible" in status:
+            values = highs.getSolution().col_value
     
     selected_shifts = list(prefix.shifts)
-    if "Optimal" in status or "Feasible" in status:
-        values = highs.getSolution().col_value
+    if ("Optimal" in status or "Feasible" in status) and values is not None:
         for i, val in enumerate(values[:len(candidates)]):
             if val > 0.5:
                 if variable_quantities:
