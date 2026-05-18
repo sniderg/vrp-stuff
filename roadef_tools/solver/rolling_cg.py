@@ -41,9 +41,11 @@ class RollingCGConfig:
     nearest_chain_neighbors: int = 10
     max_candidates_per_iteration: int = 1200
     target_fill_ratio: float = 0.95
+    multi_reload_columns: bool = False
     max_pre_service_fill_ratio: float = 0.95
     normalize_source_loads: bool = True
     quantity_objective: str = "min-delivered"
+    capacity_buffer: float = 0.05
 
 
 @dataclass(frozen=True)
@@ -130,6 +132,7 @@ def robust_rolling_rescue(
                 commit_percentile=config.commit_percentile,
                 plan_percentile=config.plan_percentile,
                 buffer_percentile=config.buffer_percentile,
+                capacity_buffer=config.capacity_buffer,
             )
             emit(
                 f"  generated {config.n_scenarios} scenarios, "
@@ -153,6 +156,7 @@ def robust_rolling_rescue(
             nearest_chain_neighbors=config.nearest_chain_neighbors,
             max_candidates_per_iteration=config.max_candidates_per_iteration,
             target_fill_ratio=config.target_fill_ratio,
+            multi_reload_columns=config.multi_reload_columns,
             max_pre_service_fill_ratio=config.max_pre_service_fill_ratio,
             normalize_source_loads=config.normalize_source_loads,
             quantity_objective=config.quantity_objective,
@@ -234,16 +238,78 @@ def robust_rolling_rescue(
         f"cost={final_score.scored_estimated_cost:.2f}"
     )
 
-    # Reindex shifts
-    final_solution = Solution(
-        shifts=tuple(
-            replace(shift, index=i)
-            for i, shift in enumerate(
-                sorted(current_solution.shifts, key=lambda s: (s.start, s.driver))
+    # Reindex shifts and apply final physics clipping to prevent any residual overfills
+    final_solution = clip_to_tank_capacity(
+        instance,
+        Solution(
+            shifts=tuple(
+                replace(shift, index=i)
+                for i, shift in enumerate(
+                    sorted(current_solution.shifts, key=lambda s: (s.start, s.driver))
+                )
             )
-        )
+        ),
     )
     return final_solution, steps
+
+
+def clip_to_tank_capacity(instance: Instance, solution: Solution) -> Solution:
+    """Ensure no delivery exceeds available tank space or violates min-quantity.
+
+    If a planned delivery would overfill, it is truncated to the available space.
+    If the truncated quantity is below the customer's min-delivery requirement,
+    the delivery is canceled (set to 0).
+    """
+    from ..inventory import tank_events
+
+    events = list(tank_events(instance, solution))
+    # Map (shift_index, op_index) -> max_allowed_quantity
+    allowed: dict[tuple[int, int], float] = {}
+
+    for customer in instance.customers:
+        inventory = customer.initial_tank_quantity
+        # Get all deliveries for this customer, sorted by time
+        cust_deliveries = []
+        for s_idx, s in enumerate(solution.shifts):
+            for op_idx, op in enumerate(s.operations):
+                if op.point == customer.index and op.quantity > 0:
+                    cust_deliveries.append((op.arrival, s_idx, op_idx, op.quantity))
+        
+        cust_deliveries.sort()
+        
+        last_time = 0
+        for arrival, s_idx, op_idx, qty in cust_deliveries:
+            # 1. Consume until arrival
+            start_step = last_time // instance.unit
+            end_step = arrival // instance.unit
+            for step in range(start_step, min(end_step, instance.horizon)):
+                inventory -= customer.forecast[step]
+            
+            inventory = max(0.0, inventory)
+            
+            # 2. Check space
+            space = max(0.0, customer.capacity - inventory)
+            clipped = min(qty, space)
+            
+            # 3. Min op guard
+            if clipped < customer.min_operation_quantity - 1e-6:
+                clipped = 0.0
+                
+            allowed[(s_idx, op_idx)] = clipped
+            inventory += clipped
+            last_time = arrival
+
+    new_shifts = []
+    for shift in solution.shifts:
+        new_ops = []
+        for op_idx, op in enumerate(shift.operations):
+            if (shift.index, op_idx) in allowed:
+                new_ops.append(replace(op, quantity=allowed[(shift.index, op_idx)]))
+            else:
+                new_ops.append(op)
+        new_shifts.append(replace(shift, operations=tuple(new_ops)))
+
+    return Solution(shifts=tuple(new_shifts))
 
 
 def _instance_days(instance: Instance) -> int:

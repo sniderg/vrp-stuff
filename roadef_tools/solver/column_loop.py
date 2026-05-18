@@ -40,7 +40,7 @@ class ColumnLoopConfig:
     samples_per_customer: int = 8
     sample_lookback_days: int = 14
     max_chain_length: int = 4
-    nearest_chain_neighbors: int = 10
+    nearest_chain_neighbors: int = 4
     max_candidates_per_iteration: int = 1200
     target_fill_ratio: float = 0.95
     max_pre_service_fill_ratio: float = 0.95

@@ -125,6 +125,7 @@ def build_hedged_instance(
     commit_percentile: float = 50.0,
     plan_percentile: float = 75.0,
     buffer_percentile: float = 90.0,
+    capacity_buffer: float = 0.05,
 ) -> Instance:
     """Build a single hedged Instance from K scenarios.
 
@@ -137,6 +138,10 @@ def build_hedged_instance(
 
     Higher percentiles mean more pessimistic (higher) consumption, which
     causes the solver to over-deliver as a robustness buffer.
+
+    The `capacity_buffer` (e.g., 0.05 for 5%) reduces the tank capacity in the
+    hedged instance, leaving physical headroom on the true instance to
+    prevent overfills during over-delivery.
     """
     steps_per_day = MINUTES_PER_DAY // instance.unit
     hedged_customers = []
@@ -166,8 +171,15 @@ def build_hedged_instance(
                 np.percentile(scenario_array[:, step], pct),
             )
 
+        # Shrink capacity to leave headroom for hedging over-delivery
+        hedged_capacity = customer.capacity * (1.0 - capacity_buffer)
+
         hedged_customers.append(
-            replace(customer, forecast=tuple(hedged_forecast.tolist()))
+            replace(
+                customer,
+                forecast=tuple(hedged_forecast.tolist()),
+                capacity=hedged_capacity,
+            )
         )
 
     return replace(instance, customers=tuple(hedged_customers))

@@ -31,6 +31,7 @@ def select_shifts_with_highs(
     end_day: int,
     variable_quantities: bool = False,
     pressure_pricing: bool = True,
+    baseline: Solution | None = None,
 ) -> Solution:
     try:
         import highspy
@@ -95,6 +96,18 @@ def select_shifts_with_highs(
     _add_driver_overlap_constraints(highs, instance, candidates, x_indices, intervals)
     _add_trailer_overlap_constraints(highs, candidates, x_indices, intervals)
     _add_prefix_conflict_constraints(highs, instance, prefix, candidates, x_indices, intervals)
+    if baseline is not None:
+        _add_trailer_ending_inventory_constraints(
+            highs,
+            instance,
+            baseline,
+            candidates,
+            x_indices,
+            q_variables,
+            q_indices,
+            start_day,
+            end_day,
+        )
     if variable_quantities:
         _add_shift_quantity_capacity_constraints(highs, instance, candidates, x_indices, q_variables, q_indices)
 
@@ -363,9 +376,16 @@ def _add_shift_quantity_capacity_constraints(
         by_shift.setdefault(variable.shift_index, []).append(variable_index)
 
     for shift_index, variable_indices in by_shift.items():
-        trailer = instance.trailers[candidates[shift_index].trailer]
+        shift = candidates[shift_index]
+        trailer = instance.trailers[shift.trailer]
+        sum_loads = sum(
+            abs(op.quantity)
+            for op in shift.operations
+            if op.point in instance.source_by_point
+        )
+        max_total_delivery = trailer.capacity + sum_loads
         indices = [q_indices[index] for index in variable_indices] + [x_indices[shift_index]]
-        coefficients = [1.0] * len(variable_indices) + [-trailer.capacity]
+        coefficients = [1.0] * len(variable_indices) + [-max_total_delivery]
         highs.addRow(
             -1e20,
             0.0,
@@ -411,7 +431,14 @@ def _add_inventory_constraints_with_slacks(
             baseline_event = events_by_cust_step.get((customer.index, step))
             if baseline_event is None: continue
             
-            rhs_lower = customer.safety_level - baseline_event.ending_inventory
+            end_step = min(instance.horizon - 1, end_day * 1440 // instance.unit)
+            target_level = customer.safety_level
+            slack_penalty = 10_000_000.0
+            if step == end_step:
+                target_level = customer.safety_level + 0.35 * (customer.capacity - customer.safety_level)
+                slack_penalty = 100_000.0
+            
+            rhs_lower = target_level - baseline_event.ending_inventory
             rhs_upper = customer.capacity - baseline_event.ending_inventory
             
             relevant = [
@@ -420,8 +447,8 @@ def _add_inventory_constraints_with_slacks(
                 if variable.arrival <= step_time
             ]
 
-            # Safety breach slack (10M penalty)
-            highs.addCol(10_000_000.0, 0.0, inf, 0, np.array([], dtype=np.int32), np.array([], dtype=np.float64))
+            # Safety breach slack
+            highs.addCol(slack_penalty, 0.0, inf, 0, np.array([], dtype=np.int32), np.array([], dtype=np.float64))
             slack_breach_idx = highs.getNumCol() - 1
             
             indices = [q_indices[variable_index] for variable_index in relevant] + [slack_breach_idx]
@@ -481,7 +508,14 @@ def _add_fixed_inventory_constraints_with_slacks(
             if baseline_event is None:
                 continue
 
-            rhs_lower = customer.safety_level - baseline_event.ending_inventory
+            end_step = min(instance.horizon - 1, end_day * 1440 // instance.unit)
+            target_level = customer.safety_level
+            slack_penalty = 10_000_000.0
+            if step == end_step:
+                target_level = customer.safety_level + 0.35 * (customer.capacity - customer.safety_level)
+                slack_penalty = 100_000.0
+
+            rhs_lower = target_level - baseline_event.ending_inventory
             rhs_upper = customer.capacity - baseline_event.ending_inventory
 
             relevant_shifts = {}
@@ -492,7 +526,7 @@ def _add_fixed_inventory_constraints_with_slacks(
                 if total_qty > EPSILON:
                     relevant_shifts[shift_index] = total_qty
 
-            highs.addCol(10_000_000.0, 0.0, inf, 0, np.array([], dtype=np.int32), np.array([], dtype=np.float64))
+            highs.addCol(slack_penalty, 0.0, inf, 0, np.array([], dtype=np.int32), np.array([], dtype=np.float64))
             slack_breach_idx = highs.getNumCol() - 1
             indices = [x_indices[shift_index] for shift_index in relevant_shifts] + [slack_breach_idx]
             qtys = [relevant_shifts[shift_index] for shift_index in relevant_shifts] + [1.0]
@@ -583,13 +617,14 @@ def _inventory_checkpoint_steps(
     candidate_delivery_steps=None,
 ):
     start_step = max(0, start_day * 1440 // instance.unit)
-    end_step = min(instance.horizon - 1, end_day * 1440 // instance.unit - 1)
+    end_step = min(instance.horizon - 1, end_day * 1440 // instance.unit)
     interval_steps = max(1, 240 // instance.unit)
     by_customer = {}
 
     base_steps = set(range(start_step, end_step + 1, interval_steps))
+    base_steps.add(end_step)
     for day in range(start_day, end_day):
-        day_end = min(instance.horizon - 1, ((day + 1) * 1440) // instance.unit - 1)
+        day_end = min(instance.horizon - 1, ((day + 1) * 1440) // instance.unit)
         if start_step <= day_end <= end_step:
             base_steps.add(day_end)
 
@@ -696,3 +731,97 @@ def rebalance_drivers(instance: Instance, solution: Solution, threshold_hrs: flo
                         break
 
     return Solution(shifts=tuple(new_shifts))
+
+
+def _add_trailer_ending_inventory_constraints(
+    highs,
+    instance: Instance,
+    baseline: Solution,
+    candidates: List[Shift],
+    x_indices,
+    q_variables: list[_QuantityVariable],
+    q_indices,
+    start_day: int,
+    end_day: int,
+):
+    MINUTES_PER_DAY = 1440
+    start = start_day * MINUTES_PER_DAY
+    end = end_day * MINUTES_PER_DAY
+    inf = 1e20
+
+    # 1. Calculate baseline net change in the window for each trailer
+    baseline_window_shifts = [
+        s for s in baseline.shifts
+        if start <= s.start < end
+    ]
+    baseline_net_change = {}
+    for s in baseline_window_shifts:
+        net = 0.0
+        for op in s.operations:
+            if op.point in instance.source_by_point:
+                net += abs(op.quantity)
+            elif op.point in instance.customer_by_point:
+                net -= op.quantity
+        baseline_net_change[s.trailer] = baseline_net_change.get(s.trailer, 0.0) + net
+
+    # 2. Add net change constraint for each trailer in candidates
+    by_trailer_candidates = {}
+    for i, s in enumerate(candidates):
+        by_trailer_candidates.setdefault(s.trailer, []).append((i, s))
+
+    q_by_shift_op = {}
+    for q_idx, q_var in zip(q_indices, q_variables):
+        q_by_shift_op[(q_var.shift_index, q_var.operation_index)] = q_idx
+
+    for t in range(len(instance.trailers)):
+        target = baseline_net_change.get(t, 0.0)
+        cands = by_trailer_candidates.get(t, [])
+        if not cands and abs(target) <= EPSILON:
+            continue
+
+        indices = []
+        coefficients = []
+
+        for idx, s in cands:
+            # Source loads for this shift
+            source_load = sum(
+                abs(op.quantity)
+                for op in s.operations
+                if op.point in instance.source_by_point
+            )
+            if source_load > EPSILON:
+                indices.append(x_indices[idx])
+                coefficients.append(source_load)
+
+            # Deliveries
+            for op_idx, op in enumerate(s.operations):
+                if op.point in instance.customer_by_point and op.quantity > EPSILON:
+                    q_idx = q_by_shift_op.get((idx, op_idx))
+                    if q_idx is not None:
+                        # Variable quantity
+                        indices.append(q_idx)
+                        coefficients.append(-1.0)
+                    else:
+                        # Fixed quantity
+                        indices.append(x_indices[idx])
+                        coefficients.append(-op.quantity)
+
+        # Add slack columns: slack_up (deficit, net_change < target, so slack_up > 0)
+        # and slack_down (surplus, net_change > target, so slack_down > 0)
+        # Penalty: 50,000 per unit of deviation
+        highs.addCol(50_000.0, 0.0, inf, 0, np.array([], dtype=np.int32), np.array([], dtype=np.float64))
+        slack_up_idx = highs.getNumCol() - 1
+
+        highs.addCol(50_000.0, 0.0, inf, 0, np.array([], dtype=np.int32), np.array([], dtype=np.float64))
+        slack_down_idx = highs.getNumCol() - 1
+
+        row_indices = indices + [slack_up_idx, slack_down_idx]
+        row_coeffs = coefficients + [1.0, -1.0]
+
+        highs.addRow(
+            target,
+            target,
+            len(row_indices),
+            np.array(row_indices, dtype=np.int32),
+            np.array(row_coeffs, dtype=np.float64),
+        )

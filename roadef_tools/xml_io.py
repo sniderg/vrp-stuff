@@ -39,6 +39,8 @@ def _float(element: ET.Element, tag: str, default: float | None = None) -> float
 def _int_array(element: ET.Element | None) -> tuple[int, ...]:
     if element is None:
         return ()
+    if element.text and element.text.strip():
+        return (int(element.text.strip()),)
     return tuple(int(child.text.strip()) for child in element if child.text)
 
 
@@ -86,10 +88,19 @@ def _matrix_float(element: ET.Element) -> tuple[tuple[float, ...], ...]:
 
 def load_instance(path: str | Path) -> Instance:
     root = ET.parse(path).getroot()
+    horizon = _int(root, "horizon")
+    unit = _int(root, "unit")
     drivers = tuple(_driver(child) for child in root.find("drivers") or [])
     trailers = tuple(_trailer(child) for child in root.find("trailers") or [])
-    sources = tuple(_source(child) for child in root.find("sources") or [])
-    customers = tuple(_customer(child) for child in root.find("customers") or [])
+    all_trailer_ids = tuple(trailer.index for trailer in trailers)
+    sources = tuple(
+        _source(child, all_trailer_ids)
+        for child in root.find("sources") or []
+    )
+    customers = tuple(
+        _customer(child, horizon_minutes=horizon * unit)
+        for child in root.find("customers") or []
+    )
 
     bases = root.find("bases")
     if bases is None:
@@ -97,8 +108,8 @@ def load_instance(path: str | Path) -> Instance:
 
     return Instance(
         name=_text(root, "name", Path(path).stem),
-        unit=_int(root, "unit"),
-        horizon=_int(root, "horizon"),
+        unit=unit,
+        horizon=horizon,
         time_matrix=_matrix_int(root.find("timeMatrices") or ET.Element("empty")),
         distance_matrix=_matrix_float(root.find("DistMatrices") or ET.Element("empty")),
         base_index=_int(bases, "index"),
@@ -116,9 +127,9 @@ def _driver(element: ET.Element) -> Driver:
         max_driving_duration=_int(element, "maxDrivingDuration"),
         trailer_ids=_int_array(element.find("trailer")),
         time_windows=_time_windows(element.find("timewindows")),
-        layover_duration=_int(element, "LayoverDuration"),
-        time_cost=_float(element, "TimeCost"),
-        layover_cost=_float(element, "LayoverCost"),
+        layover_duration=_int(element, "LayoverDuration", 900),
+        time_cost=_float(element, "TimeCost", 0.0),
+        layover_cost=_float(element, "LayoverCost", 0.0),
     )
 
 
@@ -131,22 +142,24 @@ def _trailer(element: ET.Element) -> Trailer:
     )
 
 
-def _source(element: ET.Element) -> Source:
+def _source(element: ET.Element, all_trailer_ids: tuple[int, ...]) -> Source:
+    allowed_trailers = _int_array(element.find("allowedTrailers"))
     return Source(
         index=_int(element, "index"),
-        allowed_trailers=_int_array(element.find("allowedTrailers")),
+        allowed_trailers=allowed_trailers or all_trailer_ids,
         setup_time=_int(element, "setupTime"),
     )
 
 
-def _customer(element: ET.Element) -> Customer:
+def _customer(element: ET.Element, *, horizon_minutes: int) -> Customer:
+    time_windows = _time_windows(element.find("timewindows"))
     return Customer(
         index=_int(element, "index"),
         layover_customer=bool(_int(element, "LayoverCustomer", 0)),
         call_in=bool(_int(element, "callIn", 0)),
         orders=_orders(element.find("orders")),
         setup_time=_int(element, "setupTime"),
-        time_windows=_time_windows(element.find("timewindows")),
+        time_windows=time_windows or (TimeWindow(start=0, end=horizon_minutes - 1),),
         allowed_trailers=_int_array(element.find("allowedTrailers")),
         forecast=_float_array(element.find("Forecast")),
         capacity=_float(element, "Capacity", 0.0),
@@ -187,9 +200,11 @@ def save_solution(solution: Solution, path: str | Path) -> None:
     root = ET.Element("IRP_Roadef_Challenge_Output")
     shifts_element = ET.SubElement(root, "Shifts")
 
-    for shift in solution.shifts:
+    for output_index, shift in enumerate(
+        sorted(solution.shifts, key=lambda item: (item.start, item.index))
+    ):
         shift_element = ET.SubElement(shifts_element, "IRP_Roadef_Challenge_Shift_")
-        ET.SubElement(shift_element, "index").text = str(shift.index)
+        ET.SubElement(shift_element, "index").text = str(output_index)
         ET.SubElement(shift_element, "driver").text = str(shift.driver)
         ET.SubElement(shift_element, "trailer").text = str(shift.trailer)
         ET.SubElement(shift_element, "start").text = str(shift.start)

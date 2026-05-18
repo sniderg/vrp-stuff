@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections import defaultdict
 from dataclasses import dataclass
 
+import numpy as np
 from .model import Customer, Instance, Solution
 
 
@@ -68,23 +69,78 @@ def tank_events(instance: Instance, solution: Solution) -> list[TankEvent]:
     return events
 
 
+try:
+    from .inventory_fast import project_inventory_core
+    _HAS_FAST_CORE = True
+except ImportError:
+    _HAS_FAST_CORE = False
+
 def project_customer_inventory(
     instance: Instance,
     customer: Customer,
     deliveries: dict[int, float],
 ) -> list[TankEvent]:
     """Calculate tank inventory events for a single customer over the horizon."""
+    
+    if _HAS_FAST_CORE and customer.forecast is not None:
+        # Fast Cython Path
+        deliveries_by_step = np.zeros(instance.horizon, dtype=np.float64)
+        for arrival, quantity in deliveries.items():
+            step = min(max(arrival // instance.unit, 0), instance.horizon - 1)
+            deliveries_by_step[step] += quantity
+            
+        forecast_arr = np.array(customer.forecast, dtype=np.float64)
+        
+        inventory_arr, breach_arr = project_inventory_core(
+            customer.initial_tank_quantity,
+            forecast_arr,
+            deliveries_by_step,
+            customer.capacity,
+            customer.safety_level,
+            instance.horizon,
+            customer.index,
+            instance.unit,
+            1 if customer.call_in else 0
+        )
+        
+        # Convert back to TankEvent objects (this is the remaining bottleneck, 
+        # but we can optimize this later if needed)
+        events = []
+        for step in range(instance.horizon):
+            ending = inventory_arr[step]
+            events.append(
+                TankEvent(
+                    point=customer.index,
+                    step=step,
+                    time_start=step * instance.unit,
+                    initial_inventory=inventory_arr[step-1] if step > 0 else customer.initial_tank_quantity,
+                    delivered=deliveries_by_step[step],
+                    consumed=forecast_arr[step],
+                    after_consumption=inventory_arr[step] - deliveries_by_step[step],
+                    after_delivery=ending,
+                    ending_inventory=ending,
+                    capacity=customer.capacity,
+                    safety_level=customer.safety_level,
+                    overfilled_after_delivery=(not customer.call_in and ending > customer.capacity + EPSILON),
+                    overfilled_ending=(not customer.call_in and ending > customer.capacity + EPSILON),
+                    negative=(not customer.call_in and ending < -EPSILON),
+                    safety_breach=bool(breach_arr[step])
+                )
+            )
+        return events
+
+    # Legacy Python Path
     inventory = customer.initial_tank_quantity
-    deliveries_by_step: dict[int, float] = defaultdict(float)
+    deliveries_by_step_dict: dict[int, float] = defaultdict(float)
 
     for arrival, quantity in deliveries.items():
         step = min(max(arrival // instance.unit, 0), instance.horizon - 1)
-        deliveries_by_step[step] += quantity
+        deliveries_by_step_dict[step] += quantity
 
     events: list[TankEvent] = []
     for step in range(instance.horizon):
         initial = inventory
-        delivered = deliveries_by_step.get(step, 0.0)
+        delivered = deliveries_by_step_dict.get(step, 0.0)
         consumed = customer.forecast[step] if customer.forecast else 0.0
         after_consumption = initial - consumed
         ending = after_consumption + delivered

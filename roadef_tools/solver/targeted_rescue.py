@@ -6,6 +6,7 @@ from ..inventory import tank_events
 from ..model import Instance, Operation, Shift, Solution
 from ..rules import derive_solution, is_time_window_valid, is_trailer_allowed
 from ..highs_repair import repair_quantities_with_highs
+from ..route_cache import RouteCache
 from .highs_selector import select_shifts_with_highs
 
 
@@ -28,6 +29,8 @@ class RescueConfig:
     repair_quantities: bool = True
     variable_quantity_columns: bool = False
     pressure_pricing: bool = True
+    normalize_source_loads: bool = True
+    quantity_objective: str = "min-delivered"
 
 
 @dataclass(frozen=True)
@@ -52,7 +55,9 @@ def targeted_rescue(
     )
     candidates = _baseline_window_shifts(baseline, config)
     candidates.extend(generate_rescue_candidates(instance, fixed_prefix, failing, config=config))
+    candidates.extend(generate_carryover_rescue_candidates(instance, fixed_prefix, failing, config=config))
     candidates.extend(generate_chain_rescue_candidates(instance, fixed_prefix, failing, config=config))
+    candidates.extend(generate_multi_reload_candidates(instance, fixed_prefix, failing, config=config))
     candidates = _dedupe_reindex(candidates)
     if not candidates:
         return baseline, RescueReport(tuple(failing), 0, 0)
@@ -65,24 +70,38 @@ def targeted_rescue(
         end_day=config.end_day,
         variable_quantities=config.variable_quantity_columns,
         pressure_pricing=config.pressure_pricing,
+        baseline=baseline,
     )
-    rescued = normalize_source_loads(instance, rescued)
-    selected_extra = max(0, len(rescued.shifts) - len(fixed_prefix.shifts))
+    # Restore future shifts from the baseline that start after the end day of the rescue window
+    future_shifts = [
+        shift for shift in baseline.shifts
+        if shift.start >= config.end_day * MINUTES_PER_DAY
+    ]
+    all_shifts = list(rescued.shifts) + future_shifts
+    rescued = Solution(
+        shifts=tuple(replace(shift, index=i) for i, shift in enumerate(all_shifts))
+    )
+
+    if config.normalize_source_loads:
+        rescued = normalize_source_loads(instance, rescued)
+    selected_extra = max(0, len(rescued.shifts) - len(fixed_prefix.shifts) - len(future_shifts))
     repair_status = None
     repair_constraints = None
     if config.repair_quantities:
+        full_horizon_days = (instance.horizon * instance.unit) // MINUTES_PER_DAY
         rescued, repair_report = repair_quantities_with_highs(
             instance,
             rescued,
-            score_days=config.end_day,
-            feasibility_days=config.end_day,
+            score_days=full_horizon_days,
+            feasibility_days=full_horizon_days,
+            quantity_objective=config.quantity_objective,
+            baseline=baseline,
         )
-        rescued = normalize_source_loads(instance, rescued)
+        if config.normalize_source_loads:
+            rescued = normalize_source_loads(instance, rescued)
         repair_status = repair_report.status
         repair_constraints = repair_report.constraints
-    rescued = Solution(
-        shifts=tuple(replace(shift, index=i) for i, shift in enumerate(rescued.shifts))
-    )
+
     return rescued, RescueReport(
         tuple(failing),
         len(candidates),
@@ -293,6 +312,108 @@ def generate_rescue_candidates(
     return candidates
 
 
+def generate_carryover_rescue_candidates(
+    instance: Instance,
+    baseline: Solution,
+    failing_customers: list[int],
+    *,
+    config: RescueConfig,
+) -> list[Shift]:
+    """Generate direct customer visits using load already on a trailer.
+
+    Official B solutions frequently start shifts with customer deliveries before
+    any source visit. This candidate type is required for customers that are too
+    far from source for a source->customer route inside a driver window, but can
+    still be reached directly from base with carried trailer load.
+    """
+    start_minute = max(config.start_day, config.replace_from_day) * MINUTES_PER_DAY
+    end_minute = config.end_day * MINUTES_PER_DAY
+    event_cache = _events_by_customer(instance, baseline)
+    trailer_cache = _trailer_load_cache(instance, baseline)
+    candidates: list[Shift] = []
+    seen: set[tuple[object, ...]] = set()
+
+    for customer_id in failing_customers:
+        customer = instance.customer_by_point[customer_id]
+        if customer.call_in:
+            continue
+        breach_minute = _first_breach_minute(instance, baseline, customer_id, event_cache)
+        if breach_minute is None:
+            continue
+        latest_arrival = min(breach_minute - instance.unit, end_minute - 1)
+        if latest_arrival < start_minute:
+            latest_arrival = end_minute - 1
+
+        for driver in instance.drivers:
+            for trailer in instance.trailers:
+                if trailer.index not in driver.trailer_ids:
+                    continue
+                if not is_trailer_allowed(instance, customer_id, trailer.index):
+                    continue
+                route_time = (
+                    instance.time_matrix[instance.base_index][customer_id]
+                    + customer.setup_time
+                    + instance.time_matrix[customer_id][instance.base_index]
+                )
+                if route_time > max(window.end - window.start for window in driver.time_windows):
+                    continue
+
+                for target_arrival in _arrival_samples(
+                    start_minute,
+                    latest_arrival,
+                    config.samples_per_customer,
+                    config.sample_lookback_days,
+                ):
+                    shift_start = target_arrival - instance.time_matrix[instance.base_index][customer_id]
+                    if shift_start < start_minute:
+                        continue
+                    arrival = shift_start + instance.time_matrix[instance.base_index][customer_id]
+                    departure = arrival + customer.setup_time
+                    end = departure + instance.time_matrix[customer_id][instance.base_index]
+                    if end > end_minute:
+                        continue
+                    if not is_time_window_valid(shift_start, end, driver.time_windows):
+                        continue
+                    if not is_time_window_valid(arrival, departure, customer.time_windows):
+                        continue
+                    trailer_load = _trailer_load_at(instance, trailer_cache, trailer.index, shift_start)
+                    if trailer_load < customer.min_operation_quantity - EPSILON:
+                        continue
+                    inventory_at_arrival = _inventory_at_arrival(
+                        instance,
+                        baseline,
+                        customer_id,
+                        arrival,
+                        event_cache,
+                    )
+                    if inventory_at_arrival > customer.capacity * config.max_pre_service_fill_ratio + EPSILON:
+                        continue
+                    room = max(0.0, customer.capacity - inventory_at_arrival)
+                    target_room = max(
+                        0.0,
+                        customer.capacity * config.target_fill_ratio - inventory_at_arrival,
+                    )
+                    quantity = min(trailer_load, room, target_room)
+                    if quantity < customer.min_operation_quantity - EPSILON:
+                        continue
+                    shift = Shift(
+                        index=0,
+                        driver=driver.index,
+                        trailer=trailer.index,
+                        start=shift_start,
+                        operations=(Operation(customer_id, arrival, quantity),),
+                    )
+                    if not _is_shift_route_valid(instance, shift):
+                        continue
+                    key = _shift_key(shift)
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    candidates.append(replace(shift, index=len(candidates)))
+
+    return candidates
+
+
 def generate_chain_rescue_candidates(
     instance: Instance,
     baseline: Solution,
@@ -304,7 +425,15 @@ def generate_chain_rescue_candidates(
     end_minute = config.end_day * MINUTES_PER_DAY
     event_cache = _events_by_customer(instance, baseline)
     trailer_cache = _trailer_load_cache(instance, baseline)
-    sequences = _chain_sequences(instance, baseline, failing_customers, config, event_cache)
+    route_cache = RouteCache(instance)
+    sequences = _chain_sequences(
+        instance,
+        baseline,
+        failing_customers,
+        config,
+        event_cache,
+        route_cache,
+    )
     candidates: list[Shift] = []
     seen: set[tuple[object, ...]] = set()
 
@@ -381,13 +510,378 @@ def generate_chain_rescue_candidates(
     return candidates
 
 
+def generate_multi_reload_candidates(
+    instance: Instance,
+    baseline: Solution,
+    failing_customers: list[int],
+    *,
+    config: RescueConfig,
+) -> list[Shift]:
+    start_minute = max(config.start_day, config.replace_from_day) * MINUTES_PER_DAY
+    end_minute = config.end_day * MINUTES_PER_DAY
+    event_cache = _events_by_customer(instance, baseline)
+    trailer_cache = _trailer_load_cache(instance, baseline)
+    route_cache = RouteCache(instance)
+    sequences = _multi_reload_sequences(
+        instance,
+        baseline,
+        failing_customers,
+        config,
+        event_cache,
+        route_cache,
+    )
+    candidates: list[Shift] = []
+    seen: set[tuple[object, ...]] = set()
+
+    for first_segment, second_segment in sequences:
+        anchor = instance.customer_by_point[first_segment[0]]
+        anchor_breach = _first_breach_minute(instance, baseline, anchor.index, event_cache)
+        if anchor_breach is None:
+            continue
+        if anchor_breach <= start_minute + instance.unit:
+            latest_anchor_arrival = end_minute - 1
+        else:
+            latest_anchor_arrival = min(anchor_breach - instance.unit, end_minute - 1)
+            if latest_anchor_arrival < start_minute:
+                continue
+
+        for driver in instance.drivers:
+            for trailer in instance.trailers:
+                if trailer.index not in driver.trailer_ids:
+                    continue
+                route_customers = (*first_segment, *second_segment)
+                if any(
+                    not is_trailer_allowed(instance, customer_id, trailer.index)
+                    for customer_id in route_customers
+                ):
+                    continue
+                source = next(
+                    (
+                        src
+                        for src in instance.sources
+                        if trailer.index in src.allowed_trailers
+                    ),
+                    None,
+                )
+                if source is None:
+                    continue
+                lead_to_anchor = (
+                    instance.time_matrix[instance.base_index][source.index]
+                    + source.setup_time
+                    + instance.time_matrix[source.index][anchor.index]
+                )
+                for anchor_arrival in _arrival_samples(
+                    start_minute,
+                    latest_anchor_arrival,
+                    config.samples_per_customer,
+                    config.sample_lookback_days,
+                ):
+                    shift_start = anchor_arrival - lead_to_anchor
+                    if shift_start < start_minute:
+                        continue
+                    shift = _build_multi_reload_shift(
+                        instance,
+                        baseline,
+                        event_cache,
+                        trailer_cache,
+                        first_segment,
+                        second_segment,
+                        driver.index,
+                        trailer.index,
+                        source.index,
+                        shift_start,
+                        end_minute,
+                        config,
+                    )
+                    if shift is None:
+                        continue
+                    key = _shift_key(shift)
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    candidates.append(replace(shift, index=len(candidates)))
+
+    # Generate pure reload shifts to allow pre-loading at base
+    for day in range(config.start_day, config.end_day):
+        day_start = day * 1440
+        for driver in instance.drivers:
+            for trailer in instance.trailers:
+                if trailer.index not in driver.trailer_ids:
+                    continue
+                source = next(
+                    (src for src in instance.sources if trailer.index in src.allowed_trailers),
+                    None
+                )
+                if source is None:
+                    continue
+                # Shift starts at day_start
+                shift_start = day_start
+                source_arrival = shift_start + instance.time_matrix[instance.base_index][source.index]
+                duration = (
+                    instance.time_matrix[instance.base_index][source.index]
+                    + source.setup_time
+                    + instance.time_matrix[source.index][instance.base_index]
+                )
+                if duration > 720:
+                    continue
+                # Load max capacity
+                op = Operation(
+                    point=source.index,
+                    arrival=source_arrival,
+                    quantity=-trailer.capacity
+                )
+                shift = Shift(
+                    index=len(candidates),
+                    driver=driver.index,
+                    trailer=trailer.index,
+                    start=shift_start,
+                    operations=(op,)
+                )
+                key = _shift_key(shift)
+                if key not in seen:
+                    seen.add(key)
+                    candidates.append(shift)
+
+    # Generate single-customer direct shifts starting from base (utilizing pre-loaded trailers)
+    for c_id in failing_customers:
+        # Check if point is a customer
+        if c_id not in instance.customer_by_point:
+            continue
+        customer = instance.customer_by_point[c_id]
+        anchor_breach = _first_breach_minute(instance, baseline, c_id, event_cache)
+        if anchor_breach is None:
+            continue
+        if anchor_breach <= start_minute + instance.unit:
+            latest_anchor_arrival = end_minute - 1
+        else:
+            latest_anchor_arrival = min(anchor_breach - instance.unit, end_minute - 1)
+            if latest_anchor_arrival < start_minute:
+                continue
+
+        for driver in instance.drivers:
+            for trailer in instance.trailers:
+                if trailer.index not in driver.trailer_ids:
+                    continue
+                if not is_trailer_allowed(instance, c_id, trailer.index):
+                    continue
+
+                lead_to_anchor = instance.time_matrix[instance.base_index][c_id]
+                for anchor_arrival in _arrival_samples(
+                    start_minute,
+                    latest_anchor_arrival,
+                    config.samples_per_customer,
+                    config.sample_lookback_days,
+                ):
+                    shift_start = anchor_arrival - lead_to_anchor
+                    if shift_start < start_minute:
+                        continue
+                    duration = (
+                        lead_to_anchor
+                        + customer.setup_time
+                        + instance.time_matrix[c_id][instance.base_index]
+                    )
+                    if duration > 720:
+                        continue
+
+                    # Construct shift
+                    op = Operation(point=c_id, arrival=anchor_arrival, quantity=0.0)
+                    shift = Shift(
+                        index=len(candidates),
+                        driver=driver.index,
+                        trailer=trailer.index,
+                        start=shift_start,
+                        operations=(op,)
+                    )
+                    key = _shift_key(shift)
+                    if key not in seen:
+                        seen.add(key)
+                        candidates.append(shift)
+
+    return candidates
+
+
+def _multi_reload_sequences(
+    instance: Instance,
+    baseline: Solution,
+    failing_customers: list[int],
+    config: RescueConfig,
+    event_cache: dict[int, list],
+    route_cache: RouteCache | None = None,
+) -> list[tuple[tuple[int, ...], tuple[int, ...]]]:
+    sequences = _chain_sequences(
+        instance,
+        baseline,
+        failing_customers,
+        config,
+        event_cache,
+        route_cache,
+    )
+    output: list[tuple[tuple[int, ...], tuple[int, ...]]] = []
+    seen: set[tuple[tuple[int, ...], tuple[int, ...]]] = set()
+    for sequence in sequences:
+        if len(sequence) < 2:
+            continue
+        for split in range(1, len(sequence)):
+            first = sequence[:split]
+            second = sequence[split:]
+            if not first or not second:
+                continue
+            key = (first, second)
+            if key in seen:
+                continue
+            seen.add(key)
+            output.append(key)
+    return output
+
+
+def _build_multi_reload_shift(
+    instance: Instance,
+    baseline: Solution,
+    event_cache: dict[int, list],
+    trailer_cache: dict[int, list[tuple[int, float]]],
+    first_segment: tuple[int, ...],
+    second_segment: tuple[int, ...],
+    driver_id: int,
+    trailer_id: int,
+    source_id: int,
+    shift_start: int,
+    end_minute: int,
+    config: RescueConfig,
+) -> Shift | None:
+    trailer = instance.trailers[trailer_id]
+    source = instance.source_by_point[source_id]
+    source_arrival = shift_start + instance.time_matrix[instance.base_index][source_id]
+    current_time = source_arrival + source.setup_time
+    current_point = source_id
+    trailer_load = _trailer_load_at(instance, trailer_cache, trailer_id, shift_start)
+    load_quantity = max(0.0, trailer.capacity - trailer_load)
+    operations: list[Operation] = []
+    if load_quantity > EPSILON:
+        operations.append(Operation(source_id, source_arrival, -load_quantity))
+        trailer_load += load_quantity
+
+    delivered_count = 0
+    result = _append_customer_segment(
+        instance,
+        baseline,
+        event_cache,
+        first_segment,
+        current_point,
+        current_time,
+        trailer_load,
+        operations,
+        end_minute,
+        config,
+    )
+    if result is None:
+        return None
+    current_point, current_time, trailer_load, count = result
+    delivered_count += count
+
+    reload_arrival = current_time + instance.time_matrix[current_point][source_id]
+    if reload_arrival + source.setup_time >= end_minute:
+        return None
+    reload_quantity = max(0.0, trailer.capacity - trailer_load)
+    if reload_quantity <= EPSILON:
+        return None
+    operations.append(Operation(source_id, reload_arrival, -reload_quantity))
+    trailer_load += reload_quantity
+    current_point = source_id
+    current_time = reload_arrival + source.setup_time
+
+    result = _append_customer_segment(
+        instance,
+        baseline,
+        event_cache,
+        second_segment,
+        current_point,
+        current_time,
+        trailer_load,
+        operations,
+        end_minute,
+        config,
+    )
+    if result is None:
+        return None
+    current_point, current_time, trailer_load, count = result
+    delivered_count += count
+    if delivered_count < 2:
+        return None
+
+    shift = Shift(
+        index=0,
+        driver=driver_id,
+        trailer=trailer_id,
+        start=shift_start,
+        operations=tuple(operations),
+    )
+    if not _is_shift_route_valid(instance, shift):
+        return None
+    if derive_solution(instance, Solution(shifts=(shift,)))[0].end > end_minute:
+        return None
+    return shift
+
+
+def _append_customer_segment(
+    instance: Instance,
+    baseline: Solution,
+    event_cache: dict[int, list],
+    segment: tuple[int, ...],
+    current_point: int,
+    current_time: int,
+    trailer_load: float,
+    operations: list[Operation],
+    end_minute: int,
+    config: RescueConfig,
+) -> tuple[int, int, float, int] | None:
+    delivered_count = 0
+    for customer_id in segment:
+        customer = instance.customer_by_point[customer_id]
+        arrival = current_time + instance.time_matrix[current_point][customer_id]
+        departure = arrival + customer.setup_time
+        breach_minute = _first_breach_minute(instance, baseline, customer_id, event_cache)
+        if breach_minute is not None and arrival >= breach_minute:
+            continue
+        if departure >= end_minute:
+            continue
+        if not is_time_window_valid(arrival, departure, customer.time_windows):
+            continue
+        inventory_at_arrival = _inventory_at_arrival(
+            instance,
+            baseline,
+            customer_id,
+            arrival,
+            event_cache,
+        )
+        if inventory_at_arrival > customer.capacity * config.max_pre_service_fill_ratio + EPSILON:
+            continue
+        target_room = max(
+            0.0,
+            customer.capacity * config.target_fill_ratio - inventory_at_arrival,
+        )
+        room = max(0.0, customer.capacity - inventory_at_arrival)
+        quantity = min(trailer_load, room, target_room)
+        if quantity < customer.min_operation_quantity - EPSILON:
+            continue
+        operations.append(Operation(customer_id, arrival, quantity))
+        trailer_load -= quantity
+        delivered_count += 1
+        current_point = customer_id
+        current_time = departure
+    if delivered_count == 0:
+        return None
+    return current_point, current_time, trailer_load, delivered_count
+
+
 def _chain_sequences(
     instance: Instance,
     baseline: Solution,
     failing_customers: list[int],
     config: RescueConfig,
     event_cache: dict[int, list],
+    route_cache: RouteCache | None = None,
 ) -> list[tuple[int, ...]]:
+    route_cache = route_cache or RouteCache(instance)
     failing = [
         customer_id
         for customer_id in failing_customers
@@ -400,39 +894,29 @@ def _chain_sequences(
     sequences: list[tuple[int, ...]] = []
     seen: set[tuple[int, ...]] = set()
 
-    for anchor in failing:
+    def expand_chain(current_chain: tuple[int, ...]) -> None:
+        if len(current_chain) >= config.max_chain_length:
+            return
+            
+        last_customer = current_chain[-1]
         neighbors = sorted(
-            (customer_id for customer_id in failing if customer_id != anchor),
+            (customer_id for customer_id in failing if customer_id not in current_chain),
             key=lambda customer_id: (
-                instance.time_matrix[anchor][customer_id],
+                route_cache.stats((customer_id,), start_point=last_customer).travel_time,
                 breach_order[customer_id],
                 customer_id,
             ),
         )[: config.nearest_chain_neighbors]
+        
         for neighbor in neighbors:
-            pair = (anchor, neighbor)
-            if pair not in seen:
-                seen.add(pair)
-                sequences.append(pair)
-            if config.max_chain_length < 3:
-                continue
-            third_candidates = sorted(
-                (
-                    customer_id
-                    for customer_id in failing
-                    if customer_id not in pair
-                ),
-                key=lambda customer_id: (
-                    instance.time_matrix[neighbor][customer_id],
-                    breach_order[customer_id],
-                    customer_id,
-                ),
-            )
-            if third_candidates:
-                triple = (anchor, neighbor, third_candidates[0])
-                if triple not in seen:
-                    seen.add(triple)
-                    sequences.append(triple)
+            new_chain = current_chain + (neighbor,)
+            if new_chain not in seen:
+                seen.add(new_chain)
+                sequences.append(new_chain)
+            expand_chain(new_chain)
+
+    for anchor in failing:
+        expand_chain((anchor,))
 
     return sequences
 
