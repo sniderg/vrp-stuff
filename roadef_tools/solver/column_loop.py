@@ -48,6 +48,7 @@ class ColumnLoopConfig:
     max_multi_reload_per_batch: int = 20
     normalize_source_loads: bool = True
     quantity_objective: str = "min-delivered"
+    commit_end_day: int = 7
 
 
 @dataclass(frozen=True)
@@ -60,6 +61,44 @@ class ColumnLoopStep:
     feasibility_errors: int
     hard_violations: int
     first_safety_breach_minute: int | None
+    cost: float = 0.0
+    logistic_ratio: float = 0.0
+    min_commit_doi: float = 999.0
+    vulnerable_commit_customers: list[tuple[int, float]] = None
+    min_lookahead_doi: float = 999.0
+    vulnerable_lookahead_customers: list[tuple[int, float]] = None
+
+
+def get_vulnerabilities(
+    instance: Instance,
+    solution: Solution,
+    day: int,
+) -> tuple[float, list[tuple[int, float]]]:
+    """Calculate the remaining days of inventory (DOI) for each customer at the end of the given day."""
+    from ..inventory import days_of_inventory
+    # If the fast cython project_inventory is available, this call is extremely fast
+    from ..inventory import tank_events
+    events = list(tank_events(instance, solution))
+    step_cutoff = min((day * 1440) // instance.unit, instance.horizon) - 1
+    if step_cutoff < 0:
+        step_cutoff = 0
+    
+    customer_inventories = {}
+    for event in events:
+        if event.step == step_cutoff:
+            customer_inventories[event.point] = event.ending_inventory
+            
+    vulnerabilities = []
+    for customer in instance.customers:
+        if customer.call_in:
+            continue
+        current_inv = customer_inventories.get(customer.index, customer.initial_tank_quantity)
+        doi = days_of_inventory(instance, customer, current_inv, start_step=step_cutoff + 1)
+        vulnerabilities.append((customer.index, doi))
+        
+    vulnerabilities.sort(key=lambda x: x[1])
+    min_doi = vulnerabilities[0][1] if vulnerabilities else 999.0
+    return min_doi, vulnerabilities[:3]
 
 
 def column_generation_rescue(
@@ -138,6 +177,10 @@ def column_generation_rescue(
             best_score = score
             best_solution = current
 
+        logistic_ratio = score.scored_estimated_cost / max(1.0, score.scored_delivered_quantity)
+        min_commit_doi, vuln_commit = get_vulnerabilities(instance, current, config.commit_end_day)
+        min_lookahead_doi, vuln_lookahead = get_vulnerabilities(instance, current, config.end_day)
+
         steps.append(
             ColumnLoopStep(
                 iteration=iteration,
@@ -148,6 +191,12 @@ def column_generation_rescue(
                 feasibility_errors=score.feasibility_errors,
                 hard_violations=score.hard_violations,
                 first_safety_breach_minute=score.first_safety_breach_minute,
+                cost=score.scored_estimated_cost,
+                logistic_ratio=logistic_ratio,
+                min_commit_doi=min_commit_doi,
+                vulnerable_commit_customers=vuln_commit,
+                min_lookahead_doi=min_lookahead_doi,
+                vulnerable_lookahead_customers=vuln_lookahead,
             )
         )
         if score.feasible:

@@ -241,17 +241,35 @@ def robust_rolling_rescue(
                 max_pre_service_fill_ratio=config.max_pre_service_fill_ratio,
                 normalize_source_loads=config.normalize_source_loads,
                 quantity_objective=config.quantity_objective,
+                commit_end_day=commit_end_day,
             )
 
             window_solution, cg_steps = column_generation_rescue(
                 hedged, current_solution, config=cg_config
             )
 
+            has_reached_feasibility = False
             for step in cg_steps:
+                feasibility_msg = ""
+                if step.feasible:
+                    if not has_reached_feasibility:
+                        feasibility_msg = " 🎉 [MILESTONE: FEASIBILITY ACHIEVED!]"
+                        has_reached_feasibility = True
+                    else:
+                        feasibility_msg = " [Feasible]"
+                
+                v_commit_str = ", ".join(f"C{c}:{d:.2f}d" for c, d in step.vulnerable_commit_customers) if step.vulnerable_commit_customers else "None"
+                v_lookahead_str = ", ".join(f"C{c}:{d:.2f}d" for c, d in step.vulnerable_lookahead_customers) if step.vulnerable_lookahead_customers else "None"
+                
+                danger_status_commit = "⚠️ CRITICAL" if step.min_commit_doi < 0.5 else ("⚡ TIGHT" if step.min_commit_doi < 1.5 else "✅ SAFE")
+                danger_status_lookahead = "⚠️ CRITICAL" if step.min_lookahead_doi < 0.5 else ("⚡ TIGHT" if step.min_lookahead_doi < 1.5 else "✅ SAFE")
+                
                 emit(
-                    f"  cg iter={step.iteration} pool={step.pool_size} "
-                    f"errors={step.feasibility_errors} hard={step.hard_violations} "
-                    f"{'feasible' if step.feasible else ''}"
+                    f"  CG Iter {step.iteration:<2} | Pool: {step.pool_size:<4} | Shifts: {step.selected_extra_shifts:<2} | "
+                    f"Errors: {step.feasibility_errors:<3} | Hard: {step.hard_violations:<2}{feasibility_msg}\n"
+                    f"    ↳ KPI: Cost = {step.cost:.2f} | LogRatio = {step.logistic_ratio:.6f}\n"
+                    f"    ↳ Commit (Day {commit_end_day}) Safety: min DOI = {step.min_commit_doi:.2f}d ({danger_status_commit}) | Top Vulnerable: {v_commit_str}\n"
+                    f"    ↳ Lookahead (Day {solve_end_day}) Safety: min DOI = {step.min_lookahead_doi:.2f}d ({danger_status_lookahead}) | Top Vulnerable: {v_lookahead_str}"
                 )
 
             lookahead_score = score_prefix_with_feasibility_tail(
