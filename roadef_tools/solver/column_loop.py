@@ -49,6 +49,7 @@ class ColumnLoopConfig:
     normalize_source_loads: bool = True
     quantity_objective: str = "min-delivered"
     commit_end_day: int = 7
+    next_after_commit_day: int | None = None
 
 
 @dataclass(frozen=True)
@@ -67,6 +68,9 @@ class ColumnLoopStep:
     vulnerable_commit_customers: list[tuple[int, float]] = None
     min_lookahead_doi: float = 999.0
     vulnerable_lookahead_customers: list[tuple[int, float]] = None
+    next_after_commit_day: int | None = None
+    min_next_after_commit_doi: float = 999.0
+    vulnerable_next_after_commit_customers: list[tuple[int, float]] = None
 
 
 def get_vulnerabilities(
@@ -179,6 +183,12 @@ def column_generation_rescue(
 
         logistic_ratio = score.scored_estimated_cost / max(1.0, score.scored_delivered_quantity)
         min_commit_doi, vuln_commit = get_vulnerabilities(instance, current, config.commit_end_day)
+        next_after_commit_day = (
+            config.next_after_commit_day
+            if config.next_after_commit_day is not None
+            else min(config.end_day, config.commit_end_day + 7)
+        )
+        min_next_doi, vuln_next = get_vulnerabilities(instance, current, next_after_commit_day)
         min_lookahead_doi, vuln_lookahead = get_vulnerabilities(instance, current, config.end_day)
 
         steps.append(
@@ -195,6 +205,9 @@ def column_generation_rescue(
                 logistic_ratio=logistic_ratio,
                 min_commit_doi=min_commit_doi,
                 vulnerable_commit_customers=vuln_commit,
+                next_after_commit_day=next_after_commit_day,
+                min_next_after_commit_doi=min_next_doi,
+                vulnerable_next_after_commit_customers=vuln_next,
                 min_lookahead_doi=min_lookahead_doi,
                 vulnerable_lookahead_customers=vuln_lookahead,
             )

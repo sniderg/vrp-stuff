@@ -320,6 +320,7 @@ def cmd_robust_rolling_rescue(args: argparse.Namespace) -> int:
         forecast_distribution=forecast_distribution,
         max_rounds=args.max_rounds,
         committed_output_only=args.committed_output_only,
+        progress_log_path=str(args.progress_log) if args.progress_log else None,
     )
     solution, steps = robust_rolling_rescue(
         instance, baseline, config=config, progress=print
@@ -435,6 +436,7 @@ def cmd_week_ahead_ci_rescue(args: argparse.Namespace) -> int:
         max_rounds=1,
         committed_output_only=True,
         final_clip_capacity=False,
+        progress_log_path=str(args.progress_log) if args.progress_log else None,
     )
     solution, steps = robust_rolling_rescue(
         instance,
@@ -1613,6 +1615,7 @@ def build_parser() -> argparse.ArgumentParser:
     rolling_cg.add_argument("--max-hedge-retries", type=int, default=2)
     rolling_cg.add_argument("--max-rounds", type=int)
     rolling_cg.add_argument("--committed-output-only", action="store_true")
+    rolling_cg.add_argument("--progress-log", type=Path)
     rolling_cg.add_argument(
         "--forecast-input",
         type=Path,
@@ -1664,6 +1667,7 @@ def build_parser() -> argparse.ArgumentParser:
     week_ahead_ci.add_argument("--quantity-objective", choices=("min-delivered", "max-delivered"), default="min-delivered")
     week_ahead_ci.add_argument("--capacity-buffer", type=float, default=0.05)
     week_ahead_ci.add_argument("--max-hedge-retries", type=int, default=2)
+    week_ahead_ci.add_argument("--progress-log", type=Path)
     week_ahead_ci.add_argument("--no-rebalance", action="store_true")
     week_ahead_ci.set_defaults(func=cmd_week_ahead_ci_rescue)
 

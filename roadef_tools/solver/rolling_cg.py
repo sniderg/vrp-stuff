@@ -8,7 +8,9 @@ validated against the true (un-noised) instance.
 
 from __future__ import annotations
 
+import csv
 from dataclasses import dataclass, replace
+from pathlib import Path
 from typing import Literal
 from typing import Callable
 
@@ -62,6 +64,7 @@ class RollingCGConfig:
     max_rounds: int | None = None
     committed_output_only: bool = False
     final_clip_capacity: bool = True
+    progress_log_path: str | None = None
 
 
 @dataclass(frozen=True)
@@ -131,6 +134,7 @@ def robust_rolling_rescue(
     against the true (un-noised) instance.
     """
     emit = progress or (lambda _msg: None)
+    progress_log = _ProgressLog(config.progress_log_path)
     instance_days = _instance_days(instance)
     horizon_days = min(config.horizon_days, instance_days)
     commit_stride = config.commit_days
@@ -242,6 +246,7 @@ def robust_rolling_rescue(
                 normalize_source_loads=config.normalize_source_loads,
                 quantity_objective=config.quantity_objective,
                 commit_end_day=commit_end_day,
+                next_after_commit_day=min(commit_end_day + commit_stride, solve_end_day),
             )
 
             window_solution, cg_steps = column_generation_rescue(
@@ -249,27 +254,60 @@ def robust_rolling_rescue(
             )
 
             has_reached_feasibility = False
+            best_iteration_key: tuple[int, int, int, float] | None = None
             for step in cg_steps:
                 feasibility_msg = ""
                 if step.feasible:
                     if not has_reached_feasibility:
-                        feasibility_msg = " 🎉 [MILESTONE: FEASIBILITY ACHIEVED!]"
+                        feasibility_msg = " [MILESTONE: FEASIBILITY ACHIEVED]"
                         has_reached_feasibility = True
+                        progress_log.write_step(
+                            "milestone_feasible",
+                            round_index,
+                            attempt,
+                            committed_day,
+                            commit_end_day,
+                            solve_end_day,
+                            step,
+                        )
                     else:
                         feasibility_msg = " [Feasible]"
+
+                iteration_key = (
+                    0 if step.feasible else 1,
+                    step.hard_violations,
+                    step.feasibility_errors,
+                    step.cost,
+                )
+                improved = best_iteration_key is None or iteration_key < best_iteration_key
+                if improved:
+                    best_iteration_key = iteration_key
                 
                 v_commit_str = ", ".join(f"C{c}:{d:.2f}d" for c, d in step.vulnerable_commit_customers) if step.vulnerable_commit_customers else "None"
+                v_next_str = ", ".join(f"C{c}:{d:.2f}d" for c, d in step.vulnerable_next_after_commit_customers) if step.vulnerable_next_after_commit_customers else "None"
                 v_lookahead_str = ", ".join(f"C{c}:{d:.2f}d" for c, d in step.vulnerable_lookahead_customers) if step.vulnerable_lookahead_customers else "None"
                 
-                danger_status_commit = "⚠️ CRITICAL" if step.min_commit_doi < 0.5 else ("⚡ TIGHT" if step.min_commit_doi < 1.5 else "✅ SAFE")
-                danger_status_lookahead = "⚠️ CRITICAL" if step.min_lookahead_doi < 0.5 else ("⚡ TIGHT" if step.min_lookahead_doi < 1.5 else "✅ SAFE")
+                danger_status_commit = _danger_status(step.min_commit_doi)
+                danger_status_next = _danger_status(step.min_next_after_commit_doi)
+                danger_status_lookahead = _danger_status(step.min_lookahead_doi)
+                improvement_msg = " [IMPROVED]" if improved else ""
                 
                 emit(
                     f"  CG Iter {step.iteration:<2} | Pool: {step.pool_size:<4} | Shifts: {step.selected_extra_shifts:<2} | "
-                    f"Errors: {step.feasibility_errors:<3} | Hard: {step.hard_violations:<2}{feasibility_msg}\n"
+                    f"Errors: {step.feasibility_errors:<3} | Hard: {step.hard_violations:<2}{feasibility_msg}{improvement_msg}\n"
                     f"    ↳ KPI: Cost = {step.cost:.2f} | LogRatio = {step.logistic_ratio:.6f}\n"
                     f"    ↳ Commit (Day {commit_end_day}) Safety: min DOI = {step.min_commit_doi:.2f}d ({danger_status_commit}) | Top Vulnerable: {v_commit_str}\n"
+                    f"    ↳ Next (Day {step.next_after_commit_day}) Safety: min DOI = {step.min_next_after_commit_doi:.2f}d ({danger_status_next}) | Top Vulnerable: {v_next_str}\n"
                     f"    ↳ Lookahead (Day {solve_end_day}) Safety: min DOI = {step.min_lookahead_doi:.2f}d ({danger_status_lookahead}) | Top Vulnerable: {v_lookahead_str}"
+                )
+                progress_log.write_step(
+                    "iteration_improved" if improved else "iteration",
+                    round_index,
+                    attempt,
+                    committed_day,
+                    commit_end_day,
+                    solve_end_day,
+                    step,
                 )
 
             lookahead_score = score_prefix_with_feasibility_tail(
@@ -306,6 +344,19 @@ def robust_rolling_rescue(
                 f"hard={lookahead_score.hard_violations}; "
                 f"scenario_feasible={scenario_feasible} failures={scenario_failures}; "
                 f"accepted={accepted} {rejection_reason}"
+            )
+            progress_log.write_attempt(
+                "attempt_accepted" if accepted else "attempt_rejected",
+                round_index,
+                attempt,
+                committed_day,
+                commit_end_day,
+                solve_end_day,
+                true_score,
+                lookahead_score,
+                scenario_failures,
+                accepted,
+                rejection_reason,
             )
 
             evaluation = WindowEvaluation(
@@ -403,6 +454,8 @@ def robust_rolling_rescue(
         f"feasible={final_score.feasible} "
         f"cost={final_score.scored_estimated_cost:.2f}"
     )
+    progress_log.write_final(horizon_days, committed_day, final_score, len(output_solution.shifts))
+    progress_log.close()
 
     # Reindex shifts and apply final physics clipping to prevent any residual overfills
     indexed_solution = Solution(
@@ -419,6 +472,180 @@ def robust_rolling_rescue(
         else indexed_solution
     )
     return final_solution, steps
+
+
+class _ProgressLog:
+    fieldnames = (
+        "event",
+        "round",
+        "attempt",
+        "commit_start_day",
+        "commit_end_day",
+        "solve_end_day",
+        "iteration",
+        "generated_candidates",
+        "pool_size",
+        "selected_extra_shifts",
+        "feasible",
+        "errors",
+        "hard",
+        "first_safety_breach_minute",
+        "cost",
+        "logistic_ratio",
+        "scenario_failures",
+        "accepted",
+        "rejection_reason",
+        "commit_min_doi",
+        "commit_vulnerable",
+        "next_after_commit_day",
+        "next_after_commit_min_doi",
+        "next_after_commit_vulnerable",
+        "lookahead_min_doi",
+        "lookahead_vulnerable",
+        "output_shifts",
+    )
+
+    def __init__(self, path: str | None):
+        self._handle = None
+        self._writer = None
+        if path is None:
+            return
+        log_path = Path(path)
+        log_path.parent.mkdir(parents=True, exist_ok=True)
+        self._handle = log_path.open("w", newline="")
+        self._writer = csv.DictWriter(self._handle, fieldnames=self.fieldnames)
+        self._writer.writeheader()
+
+    def write_step(
+        self,
+        event: str,
+        round_index: int,
+        attempt: int,
+        commit_start_day: int,
+        commit_end_day: int,
+        solve_end_day: int,
+        step,
+    ) -> None:
+        if self._writer is None:
+            return
+        self._write(
+            {
+                "event": event,
+                "round": round_index,
+                "attempt": attempt,
+                "commit_start_day": commit_start_day,
+                "commit_end_day": commit_end_day,
+                "solve_end_day": solve_end_day,
+                "iteration": step.iteration,
+                "generated_candidates": step.generated_candidates,
+                "pool_size": step.pool_size,
+                "selected_extra_shifts": step.selected_extra_shifts,
+                "feasible": step.feasible,
+                "errors": step.feasibility_errors,
+                "hard": step.hard_violations,
+                "first_safety_breach_minute": step.first_safety_breach_minute,
+                "cost": step.cost,
+                "logistic_ratio": step.logistic_ratio,
+                "commit_min_doi": step.min_commit_doi,
+                "commit_vulnerable": _format_vulnerable(step.vulnerable_commit_customers),
+                "next_after_commit_day": step.next_after_commit_day,
+                "next_after_commit_min_doi": step.min_next_after_commit_doi,
+                "next_after_commit_vulnerable": _format_vulnerable(step.vulnerable_next_after_commit_customers),
+                "lookahead_min_doi": step.min_lookahead_doi,
+                "lookahead_vulnerable": _format_vulnerable(step.vulnerable_lookahead_customers),
+            }
+        )
+
+    def write_attempt(
+        self,
+        event: str,
+        round_index: int,
+        attempt: int,
+        commit_start_day: int,
+        commit_end_day: int,
+        solve_end_day: int,
+        true_score: ContestScore,
+        lookahead_score: ContestScore,
+        scenario_failures: int,
+        accepted: bool,
+        rejection_reason: str,
+    ) -> None:
+        if self._writer is None:
+            return
+        self._write(
+            {
+                "event": event,
+                "round": round_index,
+                "attempt": attempt,
+                "commit_start_day": commit_start_day,
+                "commit_end_day": commit_end_day,
+                "solve_end_day": solve_end_day,
+                "feasible": true_score.feasible,
+                "errors": true_score.feasibility_errors,
+                "hard": true_score.hard_violations,
+                "first_safety_breach_minute": true_score.first_safety_breach_minute,
+                "cost": true_score.scored_estimated_cost,
+                "logistic_ratio": true_score.scored_estimated_cost
+                / max(1.0, true_score.scored_delivered_quantity),
+                "scenario_failures": scenario_failures,
+                "accepted": accepted,
+                "rejection_reason": rejection_reason,
+                "lookahead_min_doi": "",
+                "lookahead_vulnerable": (
+                    f"errors={lookahead_score.feasibility_errors};"
+                    f"hard={lookahead_score.hard_violations}"
+                ),
+            }
+        )
+
+    def write_final(
+        self,
+        horizon_days: int,
+        committed_day: int,
+        score: ContestScore,
+        output_shifts: int,
+    ) -> None:
+        if self._writer is None:
+            return
+        self._write(
+            {
+                "event": "final",
+                "commit_end_day": committed_day,
+                "solve_end_day": horizon_days,
+                "feasible": score.feasible,
+                "errors": score.feasibility_errors,
+                "hard": score.hard_violations,
+                "first_safety_breach_minute": score.first_safety_breach_minute,
+                "cost": score.scored_estimated_cost,
+                "logistic_ratio": score.scored_estimated_cost
+                / max(1.0, score.scored_delivered_quantity),
+                "output_shifts": output_shifts,
+            }
+        )
+
+    def _write(self, row: dict[str, object]) -> None:
+        if self._writer is None:
+            return
+        self._writer.writerow({field: row.get(field, "") for field in self.fieldnames})
+        self._handle.flush()
+
+    def close(self) -> None:
+        if self._handle is not None:
+            self._handle.close()
+
+
+def _format_vulnerable(customers: list[tuple[int, float]] | None) -> str:
+    if not customers:
+        return ""
+    return ";".join(f"{customer}:{doi:.3f}" for customer, doi in customers)
+
+
+def _danger_status(min_doi: float) -> str:
+    if min_doi < 0.5:
+        return "CRITICAL"
+    if min_doi < 1.5:
+        return "TIGHT"
+    return "SAFE"
 
 
 def _validate_committed_scenarios(

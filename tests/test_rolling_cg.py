@@ -4,6 +4,7 @@ from dataclasses import replace
 
 from roadef_tools.contest import score_prefix_with_feasibility_tail
 from roadef_tools.model import Operation, Solution, Shift
+from roadef_tools.solver.column_loop import ColumnLoopStep
 from roadef_tools.solver.rolling_cg import RollingCGConfig, clip_to_tank_capacity, robust_rolling_rescue
 from roadef_tools.solver.rolling_cg import _accept_window, _validate_committed_scenarios
 from roadef_tools.solver.scenario import ForecastDistribution
@@ -212,3 +213,67 @@ def test_clip_to_tank_capacity_balances_source_load_after_delivery_clip() -> Non
 
     assert clipped.shifts[0].operations[0].quantity == -1.0
     assert clipped.shifts[0].operations[1].quantity == 1.0
+
+
+def test_progress_log_records_iteration_milestone_and_next_danger(tmp_path, monkeypatch) -> None:
+    import csv
+    import roadef_tools.solver.rolling_cg as rolling_cg
+
+    instance = tiny_instance(forecast=(1.0, 1.0, 1.0, 1.0))
+    candidate = Solution(shifts=())
+    cg_step = ColumnLoopStep(
+        iteration=0,
+        generated_candidates=3,
+        pool_size=5,
+        selected_extra_shifts=1,
+        feasible=True,
+        feasibility_errors=0,
+        hard_violations=0,
+        first_safety_breach_minute=None,
+        cost=12.5,
+        logistic_ratio=0.25,
+        min_commit_doi=2.0,
+        vulnerable_commit_customers=[(2, 2.0)],
+        next_after_commit_day=2,
+        min_next_after_commit_doi=0.75,
+        vulnerable_next_after_commit_customers=[(2, 0.75)],
+        min_lookahead_doi=0.5,
+        vulnerable_lookahead_customers=[(2, 0.5)],
+    )
+
+    def fake_column_generation_rescue(_instance, _baseline, *, config):
+        return candidate, (cg_step,)
+
+    monkeypatch.setattr(
+        rolling_cg,
+        "column_generation_rescue",
+        fake_column_generation_rescue,
+    )
+    log_path = tmp_path / "progress.csv"
+
+    robust_rolling_rescue(
+        instance,
+        Solution(shifts=()),
+        config=RollingCGConfig(
+            mode="hedged",
+            horizon_days=4,
+            commit_days=1,
+            lookahead_days=2,
+            max_rounds=1,
+            committed_output_only=True,
+            final_clip_capacity=False,
+            max_hedge_retries=0,
+            progress_log_path=str(log_path),
+        ),
+    )
+
+    with log_path.open() as handle:
+        rows = list(csv.DictReader(handle))
+
+    assert [row["event"] for row in rows[:2]] == [
+        "milestone_feasible",
+        "iteration_improved",
+    ]
+    assert rows[0]["next_after_commit_day"] == "2"
+    assert rows[0]["next_after_commit_min_doi"] == "0.75"
+    assert rows[-1]["event"] == "final"
