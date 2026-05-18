@@ -428,8 +428,6 @@ def _add_trailer_ending_inventory_repair_constraints(
     cutoff = score_days * MINUTES_PER_DAY
     inf = 1e20
 
-    print(f"DEBUG: _add_trailer_ending_inventory_repair_constraints called for score_days={score_days}")
-
     # 1. Calculate baseline net change for each trailer in [0, cutoff]
     baseline_window_shifts = [
         s for s in baseline.shifts
@@ -491,6 +489,3 @@ def _add_trailer_ending_inventory_repair_constraints(
             np.array(row_coeffs, dtype=np.float64),
         )
         added_count += 1
-        print(f"DEBUG: Added soft ending inventory constraint for trailer {t}: target={target:.2f}, vars count={len(indices)}")
-
-    print(f"DEBUG: Added {added_count} soft ending inventory constraints")

@@ -1,10 +1,7 @@
 from __future__ import annotations
 
-import os
-import sys
 import time
 from pathlib import Path
-from dataclasses import replace
 
 from roadef_tools.xml_io import load_instance, load_solution, save_solution
 from roadef_tools.contest import score_prefix_with_feasibility_tail
@@ -43,7 +40,11 @@ def main():
     results = []
     
     print("=" * 90)
-    print(f"{'Instance':<10} | {'Days':<5} | {'Base Score V2':<15} | {'Rescued V2':<15} | {'Rescued V1':<15} | {'Hexaly V1':<15} | {'Feasible':<10}")
+    print(
+        f"{'Instance':<10} | {'Days':<5} | {'Base Raw V1':<15} | "
+        f"{'Rescued Raw V1':<15} | {'Hexaly V1':<15} | {'Gap %':<10} | "
+        f"{'Errors':<8} | {'Hard':<6} | {'Feasible':<10}"
+    )
     print("-" * 90)
 
     for i in range(1, 12):
@@ -93,7 +94,7 @@ def main():
             normalize_source_loads=True
         )
 
-        # 1. Base Score V2 (before rescue)
+        # 1. Base raw V1 score (before rescue)
         score_base = score_prefix_with_feasibility_tail(instance, solution, score_days=days, feasibility_days=days)
         base_ratio = score_base.scored_estimated_cost / max(1.0, score_base.scored_delivered_quantity)
 
@@ -102,34 +103,44 @@ def main():
         temp_sol, report = targeted_rescue(instance, solution, config=config)
         elapsed = time.time() - t0
 
-        # Save the rescued solution
-        rescued_sol_filename = f"v1_1.{i}_rescued_full_horizon.xml"
-        rescued_sol_path = hust_dir / rescued_sol_filename
-        save_solution(temp_sol, str(rescued_sol_path))
-
-        # 3. Rescued Score V2 (after rescue)
+        # 3. Rescued raw V1 score (after rescue)
         score_rescued = score_prefix_with_feasibility_tail(instance, temp_sol, score_days=days, feasibility_days=days)
         rescued_ratio = score_rescued.scored_estimated_cost / max(1.0, score_rescued.scored_delivered_quantity)
 
-        # Hexaly comparable V1 score is V2 score divided by 2
-        rescued_v1 = rescued_ratio / 2.0
         hexaly_v1 = HEXALY_V1.get(i, float("nan"))
         hexaly_str = f"{hexaly_v1:.6f}" if i in HEXALY_V1 else "N/A"
+        is_feasible = score_rescued.feasible
+        gap = (
+            100.0 * (rescued_ratio / hexaly_v1 - 1.0)
+            if i in HEXALY_V1 and is_feasible
+            else float("nan")
+        )
+        gap_str = f"{gap:.1f}" if i in HEXALY_V1 and is_feasible else "N/A"
+        rescued_sol_filename = f"v1_1.{i}_rescued_full_horizon.xml"
+        rescued_sol_path = hust_dir / rescued_sol_filename
+        saved_path = ""
+        if is_feasible:
+            save_solution(temp_sol, str(rescued_sol_path))
+            saved_path = str(rescued_sol_path)
 
-        # Check structural feasibility (no hard violations)
-        # In ROADEF checker, errors/hard violations are feasibility_errors
-        is_feasible = (score_rescued.feasibility_errors == 0)
-
-        print(f"V_1.{i:<7} | {days:<5} | {base_ratio:<15.6f} | {rescued_ratio:<15.6f} | {rescued_v1:<15.6f} | {hexaly_str:<15} | {str(is_feasible):<10}")
+        print(
+            f"V_1.{i:<7} | {days:<5} | {base_ratio:<15.6f} | "
+            f"{rescued_ratio:<15.6f} | {hexaly_str:<15} | {gap_str:<10} | "
+            f"{score_rescued.feasibility_errors:<8} | {score_rescued.hard_violations:<6} | "
+            f"{str(is_feasible):<10}"
+        )
         
         results.append({
             "instance": f"V_1.{i}",
             "days": days,
             "base_ratio": base_ratio,
             "rescued_ratio": rescued_ratio,
-            "rescued_v1": rescued_v1,
             "hexaly_v1": hexaly_str,
+            "gap_vs_hexaly_pct": gap_str,
             "feasible": is_feasible,
+            "feasibility_errors": score_rescued.feasibility_errors,
+            "hard_violations": score_rescued.hard_violations,
+            "saved_path": saved_path,
             "elapsed": elapsed
         })
 

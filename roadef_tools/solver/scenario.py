@@ -8,14 +8,405 @@ entirely at the input layer.
 
 from __future__ import annotations
 
+import csv
+import json
 import random
-from dataclasses import replace
+import re
+from dataclasses import dataclass, replace
+from pathlib import Path
+from typing import Any
 
 import numpy as np
 
-from ..model import Customer, Instance
+from ..model import Customer, Instance, Solution
 
 MINUTES_PER_DAY = 1440
+
+
+@dataclass(frozen=True)
+class ForecastDistribution:
+    """Forecast uncertainty container for stochastic IRP planning.
+
+    ``samples`` maps customer point index to sampled forecast paths.
+    ``quantiles`` maps percentile to customer forecast paths.  This is the
+    boundary future TabPFN outputs should satisfy; TabPFN is intentionally not a
+    dependency of this module.
+    """
+
+    deterministic: dict[int, tuple[float, ...]]
+    samples: dict[int, list[tuple[float, ...]]]
+    quantiles: dict[float, dict[int, tuple[float, ...]]]
+
+    @classmethod
+    def from_instance(cls, instance: Instance) -> ForecastDistribution:
+        deterministic = {
+            customer.index: customer.forecast
+            for customer in instance.customers
+            if not customer.call_in
+        }
+        return cls(deterministic=deterministic, samples={}, quantiles={})
+
+    @classmethod
+    def from_samples(
+        cls,
+        instance: Instance,
+        samples: dict[int, list[tuple[float, ...]]],
+    ) -> ForecastDistribution:
+        deterministic = {
+            customer.index: customer.forecast
+            for customer in instance.customers
+            if not customer.call_in
+        }
+        return cls(deterministic=deterministic, samples=samples, quantiles={})
+
+    def sample_count(self) -> int:
+        return max((len(paths) for paths in self.samples.values()), default=0)
+
+
+def load_forecast_distribution(
+    instance: Instance,
+    path: str | Path,
+) -> ForecastDistribution:
+    """Load external forecast paths as solver input.
+
+    Supported row-oriented schemas:
+    - wide quantiles: ``item_id,step,0.5,0.75,0.9`` or ``customer_id,step,q50,q90``
+    - long quantiles: ``item_id,step,quantile,value``
+    - deterministic: ``item_id,step,target``
+
+    Quantiles may be expressed as fractions (``0.9``) or percentiles (``90``).
+    Missing steps fall back to the deterministic instance forecast.
+    """
+    rows = _read_forecast_rows(Path(path))
+    return forecast_distribution_from_rows(instance, rows)
+
+
+def route_wrapped_dummy_distribution(
+    instance: Instance,
+    solution: Solution,
+    *,
+    present_day: int = 0,
+    quantiles: tuple[float, ...] = (50.0, 75.0, 90.0, 95.0),
+    base_relative_width: float = 0.05,
+    daily_relative_growth: float = 0.04,
+    max_relative_width: float = 0.60,
+    route_anchor_width: float = 0.08,
+) -> ForecastDistribution:
+    """Build dummy forecast quantiles anchored around planned customer visits.
+
+    This is intentionally a fake CI producer for solver experiments.  It does
+    not forecast; it wraps the instance's current forecast with widening
+    quantile bands.  Planned visits in ``solution`` act as route anchors, so
+    uncertainty tightens around an actual route day and grows as the horizon
+    moves away from both the present and the nearest planned visit.
+    """
+    deterministic = {
+        customer.index: customer.forecast
+        for customer in instance.customers
+        if not customer.call_in
+    }
+    quantile_paths: dict[float, dict[int, tuple[float, ...]]] = {
+        _normalize_percentile(quantile): {} for quantile in quantiles
+    }
+    route_days = _customer_route_days(instance, solution)
+    steps_per_day = max(1, MINUTES_PER_DAY // instance.unit)
+
+    for customer in instance.customers:
+        if customer.call_in:
+            continue
+        customer_route_days = route_days.get(customer.index, ())
+        paths = {percentile: [] for percentile in quantile_paths}
+        for step, base_value in enumerate(customer.forecast):
+            day = step // steps_per_day
+            horizon_days = max(0, day - present_day)
+            nearest_route_gap = (
+                min(abs(day - route_day) for route_day in customer_route_days)
+                if customer_route_days
+                else horizon_days
+            )
+            relative_width = min(
+                max_relative_width,
+                base_relative_width + daily_relative_growth * horizon_days,
+            )
+            if customer_route_days:
+                relative_width = min(
+                    relative_width,
+                    route_anchor_width
+                    + daily_relative_growth * max(0, nearest_route_gap),
+                )
+            for percentile in paths:
+                scale = _quantile_scale(percentile)
+                paths[percentile].append(max(0.0, base_value * (1.0 + relative_width * scale)))
+        for percentile, values in paths.items():
+            quantile_paths[percentile][customer.index] = tuple(values)
+
+    return ForecastDistribution(
+        deterministic=deterministic,
+        samples={},
+        quantiles=quantile_paths,
+    )
+
+
+def write_forecast_distribution_csv(
+    distribution: ForecastDistribution,
+    path: str | Path,
+) -> None:
+    """Write quantile forecasts in the external forecast-input CSV schema."""
+    path = Path(path)
+    quantiles = sorted(distribution.quantiles)
+    fieldnames = ["item_id", "step", "target", *(_format_quantile(q) for q in quantiles)]
+    rows = []
+    for customer_id, deterministic_path in sorted(distribution.deterministic.items()):
+        for step, target in enumerate(deterministic_path):
+            row = {"item_id": customer_id, "step": step, "target": target}
+            for quantile in quantiles:
+                row[_format_quantile(quantile)] = distribution.quantiles.get(
+                    quantile,
+                    {},
+                ).get(customer_id, deterministic_path)[step]
+            rows.append(row)
+    with path.open("w", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        writer.writeheader()
+        writer.writerows(rows)
+
+
+def forecast_distribution_from_rows(
+    instance: Instance,
+    rows: list[dict[str, Any]],
+) -> ForecastDistribution:
+    rows = _rows_with_steps(rows)
+    deterministic = {
+        customer.index: list(customer.forecast)
+        for customer in instance.customers
+        if not customer.call_in
+    }
+    quantiles: dict[float, dict[int, list[float]]] = {}
+
+    for row in rows:
+        customer_id = _row_customer_id(row)
+        if customer_id not in deterministic:
+            continue
+        step = _row_step(row)
+        if step is None or step < 0 or step >= len(deterministic[customer_id]):
+            continue
+        long_quantile = _row_value(row, ("quantile", "percentile", "q"))
+        if long_quantile is not None:
+            value = _row_value(row, ("value", "forecast", "target", "prediction", "yhat"))
+            if value is None:
+                continue
+            percentile = _normalize_percentile(long_quantile)
+            quantiles.setdefault(percentile, {}).setdefault(
+                customer_id,
+                list(deterministic[customer_id]),
+            )[step] = max(0.0, value)
+            continue
+
+        deterministic_value = _row_value(row, ("target", "forecast", "prediction", "yhat"))
+        if deterministic_value is not None:
+            deterministic[customer_id][step] = max(0.0, deterministic_value)
+        for key, value in row.items():
+            percentile = _parse_quantile_column(key)
+            if percentile is None:
+                continue
+            parsed = _coerce_float(value)
+            if parsed is None:
+                continue
+            quantiles.setdefault(percentile, {}).setdefault(
+                customer_id,
+                list(deterministic[customer_id]),
+            )[step] = max(0.0, parsed)
+
+    return ForecastDistribution(
+        deterministic={key: tuple(value) for key, value in deterministic.items()},
+        samples={},
+        quantiles={
+            percentile: {
+                customer_id: tuple(path)
+                for customer_id, path in customer_paths.items()
+            }
+            for percentile, customer_paths in quantiles.items()
+        },
+    )
+
+
+def _read_forecast_rows(path: Path) -> list[dict[str, Any]]:
+    suffix = path.suffix.lower()
+    if suffix == ".csv":
+        with path.open(newline="") as handle:
+            return list(csv.DictReader(handle))
+    if suffix == ".json":
+        with path.open() as handle:
+            payload = json.load(handle)
+        if isinstance(payload, list):
+            return [dict(row) for row in payload]
+        if isinstance(payload, dict) and isinstance(payload.get("forecasts"), list):
+            return [dict(row) for row in payload["forecasts"]]
+        raise ValueError(f"Unsupported JSON forecast schema in {path}")
+    if suffix == ".jsonl":
+        with path.open() as handle:
+            return [json.loads(line) for line in handle if line.strip()]
+    if suffix == ".parquet":
+        try:
+            import pandas as pd
+        except ImportError as exc:
+            raise RuntimeError(
+                "Reading parquet forecast inputs requires pandas/pyarrow."
+            ) from exc
+        frame = pd.read_parquet(path)
+        return frame.to_dict(orient="records")
+    raise ValueError(f"Unsupported forecast input format: {path.suffix}")
+
+
+def _rows_with_steps(rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    if all(_row_step(row) is not None for row in rows):
+        return rows
+    timestamp_keys = ("timestamp", "date", "datetime")
+    groups: dict[int, list[dict[str, Any]]] = {}
+    passthrough = []
+    for row in rows:
+        if _row_step(row) is not None:
+            passthrough.append(row)
+            continue
+        customer_id = _row_customer_id(row)
+        if customer_id is None or not any(key in row for key in timestamp_keys):
+            passthrough.append(row)
+            continue
+        groups.setdefault(customer_id, []).append(row)
+    normalized = list(passthrough)
+    for customer_rows in groups.values():
+        customer_rows.sort(key=_row_timestamp_key)
+        for step, row in enumerate(customer_rows):
+            updated = dict(row)
+            updated["step"] = step
+            normalized.append(updated)
+    return normalized
+
+
+def _row_timestamp_key(row: dict[str, Any]) -> str:
+    for key in ("timestamp", "date", "datetime"):
+        if key in row:
+            return str(row[key])
+    return ""
+
+
+def _row_customer_id(row: dict[str, Any]) -> int | None:
+    for key in ("customer_id", "customer", "item_id", "point", "point_id", "index"):
+        if key in row:
+            return _parse_customer_id(row[key])
+    return None
+
+
+def _parse_customer_id(value: Any) -> int | None:
+    if value is None:
+        return None
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float) and value.is_integer():
+        return int(value)
+    match = re.search(r"(\d+)$", str(value))
+    return int(match.group(1)) if match else None
+
+
+def _row_step(row: dict[str, Any]) -> int | None:
+    for key in ("step", "time_step", "horizon_step", "t"):
+        if key in row:
+            value = _coerce_float(row[key])
+            return int(value) if value is not None else None
+    return None
+
+
+def _row_value(row: dict[str, Any], keys: tuple[str, ...]) -> float | None:
+    for key in keys:
+        if key in row:
+            value = _coerce_float(row[key])
+            if value is not None:
+                return value
+    return None
+
+
+def _coerce_float(value: Any) -> float | None:
+    if value is None:
+        return None
+    try:
+        if value == "":
+            return None
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return None
+    if not np.isfinite(parsed):
+        return None
+    return parsed
+
+
+def _parse_quantile_column(key: Any) -> float | None:
+    label = str(key).strip().lower()
+    if label in {
+        "item_id",
+        "customer_id",
+        "customer",
+        "point",
+        "point_id",
+        "index",
+        "step",
+        "time_step",
+        "horizon_step",
+        "timestamp",
+        "date",
+        "datetime",
+        "target",
+        "forecast",
+        "prediction",
+        "yhat",
+        "value",
+        "quantile",
+        "percentile",
+        "q",
+    }:
+        return None
+    if label.startswith(("q", "p")):
+        label = label[1:]
+    value = _coerce_float(label)
+    if value is None:
+        return None
+    if 0.0 < value <= 1.0:
+        return value * 100.0
+    if 1.0 < value <= 100.0:
+        return value
+    return None
+
+
+def _normalize_percentile(value: float) -> float:
+    if 0.0 < value <= 1.0:
+        return value * 100.0
+    if 1.0 < value <= 100.0:
+        return value
+    raise ValueError(f"Invalid quantile/percentile value: {value}")
+
+
+def _customer_route_days(instance: Instance, solution: Solution) -> dict[int, tuple[int, ...]]:
+    customer_ids = {customer.index for customer in instance.customers if not customer.call_in}
+    days: dict[int, set[int]] = {customer_id: set() for customer_id in customer_ids}
+    for shift in solution.shifts:
+        for operation in shift.operations:
+            if operation.point in days and operation.quantity > 0:
+                days[operation.point].add(max(0, operation.arrival // MINUTES_PER_DAY))
+    return {
+        customer_id: tuple(sorted(customer_days))
+        for customer_id, customer_days in days.items()
+        if customer_days
+    }
+
+
+def _quantile_scale(percentile: float) -> float:
+    if percentile <= 50.0:
+        return 0.0
+    return min(2.0, (percentile - 50.0) / 50.0)
+
+
+def _format_quantile(percentile: float) -> str:
+    value = percentile / 100.0
+    return f"{value:.3f}".rstrip("0").rstrip(".")
 
 
 def generate_scenario_forecast(
@@ -183,3 +574,115 @@ def build_hedged_instance(
         )
 
     return replace(instance, customers=tuple(hedged_customers))
+
+
+def build_hedged_instance_from_distribution(
+    instance: Instance,
+    distribution: ForecastDistribution,
+    *,
+    commit_end_day: int = 7,
+    plan_end_day: int = 14,
+    commit_percentile: float = 50.0,
+    plan_percentile: float = 75.0,
+    buffer_percentile: float = 90.0,
+    capacity_buffer: float = 0.05,
+) -> Instance:
+    """Build a hedged instance from quantile paths or sampled paths."""
+    if distribution.quantiles:
+        return _build_quantile_hedged_instance(
+            instance,
+            distribution,
+            commit_end_day=commit_end_day,
+            plan_end_day=plan_end_day,
+            commit_percentile=commit_percentile,
+            plan_percentile=plan_percentile,
+            buffer_percentile=buffer_percentile,
+            capacity_buffer=capacity_buffer,
+        )
+    return build_hedged_instance(
+        instance,
+        distribution.samples,
+        commit_end_day=commit_end_day,
+        plan_end_day=plan_end_day,
+        commit_percentile=commit_percentile,
+        plan_percentile=plan_percentile,
+        buffer_percentile=buffer_percentile,
+        capacity_buffer=capacity_buffer,
+    )
+
+
+def build_scenario_instance(
+    instance: Instance,
+    scenarios: dict[int, list[tuple[float, ...]]],
+    scenario_index: int,
+) -> Instance:
+    """Build an instance using one sampled forecast for each VMI customer."""
+    scenario_customers = []
+    for customer in instance.customers:
+        customer_scenarios = scenarios.get(customer.index)
+        if customer.call_in or not customer_scenarios:
+            scenario_customers.append(customer)
+            continue
+        if not (0 <= scenario_index < len(customer_scenarios)):
+            raise IndexError(
+                f"scenario_index={scenario_index} out of range for customer {customer.index}"
+            )
+        scenario_customers.append(
+            replace(customer, forecast=customer_scenarios[scenario_index])
+        )
+    return replace(instance, customers=tuple(scenario_customers))
+
+
+def build_scenario_instance_from_distribution(
+    instance: Instance,
+    distribution: ForecastDistribution,
+    scenario_index: int,
+) -> Instance:
+    return build_scenario_instance(instance, distribution.samples, scenario_index)
+
+
+def _build_quantile_hedged_instance(
+    instance: Instance,
+    distribution: ForecastDistribution,
+    *,
+    commit_end_day: int,
+    plan_end_day: int,
+    commit_percentile: float,
+    plan_percentile: float,
+    buffer_percentile: float,
+    capacity_buffer: float,
+) -> Instance:
+    steps_per_day = MINUTES_PER_DAY // instance.unit
+    percentiles = sorted(distribution.quantiles)
+
+    def nearest_path(percentile: float, customer_id: int, fallback: tuple[float, ...]) -> tuple[float, ...]:
+        if not percentiles:
+            return fallback
+        nearest = min(percentiles, key=lambda value: abs(value - percentile))
+        return distribution.quantiles.get(nearest, {}).get(customer_id, fallback)
+
+    customers = []
+    for customer in instance.customers:
+        if customer.call_in:
+            customers.append(customer)
+            continue
+        commit_path = nearest_path(commit_percentile, customer.index, customer.forecast)
+        plan_path = nearest_path(plan_percentile, customer.index, customer.forecast)
+        buffer_path = nearest_path(buffer_percentile, customer.index, customer.forecast)
+        forecast = []
+        for step in range(len(customer.forecast)):
+            day = step // steps_per_day
+            if day < commit_end_day:
+                forecast.append(commit_path[step])
+            elif day < plan_end_day:
+                forecast.append(plan_path[step])
+            else:
+                forecast.append(buffer_path[step])
+        customers.append(
+            replace(
+                customer,
+                forecast=tuple(forecast),
+                capacity=customer.capacity * (1.0 - capacity_buffer),
+            )
+        )
+    return replace(instance, customers=tuple(customers))

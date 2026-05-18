@@ -9,20 +9,28 @@ validated against the true (un-noised) instance.
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from typing import Literal
 from typing import Callable
 
-from ..contest import ContestScore, score_prefix_with_feasibility_tail
+from ..contest import ContestScore, score_prefix_with_feasibility_tail, truncate_solution
 from ..model import Instance, Solution
 from .column_loop import ColumnLoopConfig, column_generation_rescue
-from .scenario import build_hedged_instance, generate_scenarios
+from .scenario import (
+    ForecastDistribution,
+    build_hedged_instance_from_distribution,
+    build_scenario_instance_from_distribution,
+    generate_scenarios,
+)
 
 MINUTES_PER_DAY = 1440
+RollingMode = Literal["deterministic", "hedged", "robust"]
 
 
 @dataclass(frozen=True)
 class RollingCGConfig:
     """Configuration for the robust rolling CG solver."""
 
+    mode: RollingMode = "hedged"
     horizon_days: int = 30
     commit_days: int = 7
     lookahead_days: int = 14
@@ -46,6 +54,14 @@ class RollingCGConfig:
     normalize_source_loads: bool = True
     quantity_objective: str = "min-delivered"
     capacity_buffer: float = 0.05
+    max_hedge_retries: int = 2
+    percentile_retry_step: float = 5.0
+    capacity_buffer_retry_step: float = 0.03
+    cg_iteration_retry_step: int = 2
+    forecast_distribution: ForecastDistribution | None = None
+    max_rounds: int | None = None
+    committed_output_only: bool = False
+    final_clip_capacity: bool = True
 
 
 @dataclass(frozen=True)
@@ -63,6 +79,34 @@ class RollingCGStep:
     first_safety_breach_minute: int | None
     committed_shifts: int
     total_shifts: int
+    scenario_feasible: bool
+    scenario_failures: int
+    retry_count: int
+    accepted: bool = True
+    rejection_reason: str = ""
+
+
+@dataclass(frozen=True)
+class WindowEvaluation:
+    solution: Solution
+    true_score: ContestScore
+    scenario_feasible: bool
+    scenario_failures: int
+    scenario_failure_rate: float
+    retry_count: int
+    cg_iterations: int
+    accepted: bool
+    rejection_reason: str
+
+    @property
+    def key(self) -> tuple[int, int, int, int, float]:
+        return (
+            0 if self.true_score.feasible else 1,
+            self.scenario_failures,
+            self.true_score.hard_violations,
+            self.true_score.feasibility_errors,
+            self.true_score.scored_estimated_cost,
+        )
 
 
 ProgressCallback = Callable[[str], None]
@@ -96,9 +140,17 @@ def robust_rolling_rescue(
     committed_day = 0
     round_index = 0
 
-    while committed_day < horizon_days:
+    while committed_day < horizon_days and (
+        config.max_rounds is None or round_index < config.max_rounds
+    ):
         commit_end_day = min(committed_day + commit_stride, horizon_days)
         solve_end_day = min(committed_day + commit_stride + config.lookahead_days, horizon_days)
+        incumbent_commit_score = score_prefix_with_feasibility_tail(
+            instance,
+            current_solution,
+            score_days=commit_end_day,
+            feasibility_days=commit_end_day,
+        )
 
         emit(
             f"round={round_index} commit_days=[{committed_day},{commit_end_day}) "
@@ -108,85 +160,170 @@ def robust_rolling_rescue(
         # Is this the last round? Use true data (no noise needed)
         is_last_round = commit_end_day >= horizon_days
 
-        if is_last_round:
-            hedged = instance
-            emit("  last round: using true data (no noise)")
+        attempts = config.max_hedge_retries + 1
+        best_attempt: WindowEvaluation | None = None
+
+        for attempt in range(attempts):
+            plan_percentile = min(
+                99.0,
+                config.plan_percentile + attempt * config.percentile_retry_step,
+            )
+            buffer_percentile = min(
+                99.0,
+                config.buffer_percentile + attempt * config.percentile_retry_step,
+            )
+            capacity_buffer = min(
+                0.30,
+                config.capacity_buffer + attempt * config.capacity_buffer_retry_step,
+            )
+            cg_iterations = config.cg_iterations + attempt * config.cg_iteration_retry_step
+
+            distribution = (
+                config.forecast_distribution
+                if config.forecast_distribution is not None
+                else ForecastDistribution.from_instance(instance)
+            )
+            if config.mode == "deterministic" or is_last_round:
+                hedged = instance
+                emit("  using true data (no stochastic hedge)")
+            else:
+                plan_sigma, buffer_sigma = _mode_sigmas(config)
+                plan_percentile, buffer_percentile, capacity_buffer = _mode_hedge_values(
+                    config,
+                    attempt,
+                    plan_percentile,
+                    buffer_percentile,
+                    capacity_buffer,
+                )
+                if config.forecast_distribution is None:
+                    sigma_schedule = {"plan": plan_sigma, "buffer": buffer_sigma}
+                    scenarios = generate_scenarios(
+                        instance,
+                        n_scenarios=config.n_scenarios,
+                        seed=config.scenario_seed + round_index,
+                        commit_end_day=commit_end_day,
+                        day_sigma_schedule=sigma_schedule,
+                    )
+                    distribution = ForecastDistribution.from_samples(instance, scenarios)
+                    source_label = f"generated {config.n_scenarios} scenarios"
+                else:
+                    source_label = "loaded external forecast distribution"
+                hedged = build_hedged_instance_from_distribution(
+                    instance,
+                    distribution,
+                    commit_end_day=commit_end_day,
+                    plan_end_day=min(commit_end_day + commit_stride, horizon_days),
+                    commit_percentile=config.commit_percentile,
+                    plan_percentile=plan_percentile,
+                    buffer_percentile=buffer_percentile,
+                    capacity_buffer=capacity_buffer,
+                )
+                emit(
+                    f"  attempt={attempt} {source_label}, "
+                    f"plan_σ={plan_sigma}, buffer_σ={buffer_sigma}, "
+                    f"p={plan_percentile:.1f}/{buffer_percentile:.1f}, "
+                    f"capacity_buffer={capacity_buffer:.3f}"
+                )
+
+            cg_config = ColumnLoopConfig(
+                start_day=0,
+                end_day=solve_end_day,
+                replace_from_day=committed_day,
+                iterations=cg_iterations,
+                max_pressure_customers=config.max_pressure_customers,
+                samples_per_customer=config.samples_per_customer,
+                sample_lookback_days=max(7, committed_day),
+                max_chain_length=config.max_chain_length,
+                nearest_chain_neighbors=config.nearest_chain_neighbors,
+                max_candidates_per_iteration=config.max_candidates_per_iteration,
+                target_fill_ratio=config.target_fill_ratio,
+                multi_reload_columns=config.multi_reload_columns,
+                max_pre_service_fill_ratio=config.max_pre_service_fill_ratio,
+                normalize_source_loads=config.normalize_source_loads,
+                quantity_objective=config.quantity_objective,
+            )
+
+            window_solution, cg_steps = column_generation_rescue(
+                hedged, current_solution, config=cg_config
+            )
+
+            for step in cg_steps:
+                emit(
+                    f"  cg iter={step.iteration} pool={step.pool_size} "
+                    f"errors={step.feasibility_errors} hard={step.hard_violations} "
+                    f"{'feasible' if step.feasible else ''}"
+                )
+
+            lookahead_score = score_prefix_with_feasibility_tail(
+                instance,
+                window_solution,
+                score_days=solve_end_day,
+                feasibility_days=solve_end_day,
+            )
+            true_score = score_prefix_with_feasibility_tail(
+                instance,
+                window_solution,
+                score_days=commit_end_day,
+                feasibility_days=commit_end_day,
+            )
+            scenario_feasible, scenario_failures = _validate_committed_scenarios(
+                instance,
+                window_solution,
+                distribution,
+                commit_end_day,
+            )
+            scenario_count = distribution.sample_count()
+            scenario_failure_rate = (
+                scenario_failures / scenario_count if scenario_count else 0.0
+            )
+            accepted, rejection_reason = _accept_window(
+                incumbent_commit_score,
+                true_score,
+                scenario_failures,
+            )
+            emit(
+                f"  commit score: errors={true_score.feasibility_errors} "
+                f"hard={true_score.hard_violations} feasible={true_score.feasible}; "
+                f"lookahead errors={lookahead_score.feasibility_errors} "
+                f"hard={lookahead_score.hard_violations}; "
+                f"scenario_feasible={scenario_feasible} failures={scenario_failures}; "
+                f"accepted={accepted} {rejection_reason}"
+            )
+
+            evaluation = WindowEvaluation(
+                solution=window_solution,
+                true_score=true_score,
+                scenario_feasible=scenario_feasible,
+                scenario_failures=scenario_failures,
+                scenario_failure_rate=scenario_failure_rate,
+                retry_count=attempt,
+                cg_iterations=len(cg_steps),
+                accepted=accepted,
+                rejection_reason=rejection_reason,
+            )
+            if accepted and (best_attempt is None or evaluation.key < best_attempt.key):
+                best_attempt = evaluation
+            if accepted and true_score.feasible and scenario_feasible:
+                break
+
+        accepted_window = best_attempt is not None
+        if best_attempt is None:
+            true_score = incumbent_commit_score
+            window_solution = current_solution
+            scenario_feasible = True
+            scenario_failures = 0
+            retry_count = attempts - 1
+            cg_iterations = 0
+            rejection_reason = "kept incumbent: all candidates rejected"
+            emit(f"  {rejection_reason}")
         else:
-            # Generate scenarios with noise growing from commit boundary
-            sigma_schedule = {
-                "plan": config.plan_sigma,
-                "buffer": config.buffer_sigma,
-            }
-            scenarios = generate_scenarios(
-                instance,
-                n_scenarios=config.n_scenarios,
-                seed=config.scenario_seed + round_index,
-                commit_end_day=commit_end_day,
-                day_sigma_schedule=sigma_schedule,
-            )
-            hedged = build_hedged_instance(
-                instance,
-                scenarios,
-                commit_end_day=commit_end_day,
-                plan_end_day=min(commit_end_day + commit_stride, horizon_days),
-                commit_percentile=config.commit_percentile,
-                plan_percentile=config.plan_percentile,
-                buffer_percentile=config.buffer_percentile,
-                capacity_buffer=config.capacity_buffer,
-            )
-            emit(
-                f"  generated {config.n_scenarios} scenarios, "
-                f"plan_σ={config.plan_sigma}, buffer_σ={config.buffer_sigma}"
-            )
-
-        # Build CG config for this window
-        # The CG scores from start_day to end_day. We want it to score
-        # the full range 0..solve_end_day so the prefix is included in
-        # feasibility, but replace_from_day controls which routes can
-        # be generated/replaced.
-        cg_config = ColumnLoopConfig(
-            start_day=0,
-            end_day=solve_end_day,
-            replace_from_day=committed_day,
-            iterations=config.cg_iterations,
-            max_pressure_customers=config.max_pressure_customers,
-            samples_per_customer=config.samples_per_customer,
-            sample_lookback_days=max(7, committed_day),
-            max_chain_length=config.max_chain_length,
-            nearest_chain_neighbors=config.nearest_chain_neighbors,
-            max_candidates_per_iteration=config.max_candidates_per_iteration,
-            target_fill_ratio=config.target_fill_ratio,
-            multi_reload_columns=config.multi_reload_columns,
-            max_pre_service_fill_ratio=config.max_pre_service_fill_ratio,
-            normalize_source_loads=config.normalize_source_loads,
-            quantity_objective=config.quantity_objective,
-        )
-
-        # Run CG on the hedged instance
-        window_solution, cg_steps = column_generation_rescue(
-            hedged, current_solution, config=cg_config
-        )
-
-        # Report CG convergence
-        for step in cg_steps:
-            emit(
-                f"  cg iter={step.iteration} pool={step.pool_size} "
-                f"errors={step.feasibility_errors} hard={step.hard_violations} "
-                f"{'✅ feasible' if step.feasible else ''}"
-            )
-
-        # Score the window solution against the TRUE instance (not hedged)
-        true_score = score_prefix_with_feasibility_tail(
-            instance,
-            window_solution,
-            score_days=solve_end_day,
-            feasibility_days=solve_end_day,
-        )
-        emit(
-            f"  true-instance score: errors={true_score.feasibility_errors} "
-            f"hard={true_score.hard_violations} "
-            f"feasible={true_score.feasible}"
-        )
+            window_solution = best_attempt.solution
+            true_score = best_attempt.true_score
+            scenario_feasible = best_attempt.scenario_feasible
+            scenario_failures = best_attempt.scenario_failures
+            retry_count = best_attempt.retry_count
+            cg_iterations = best_attempt.cg_iterations
+            rejection_reason = best_attempt.rejection_reason
 
         # Commit: keep all shifts starting before commit boundary
         commit_cutoff = commit_end_day * MINUTES_PER_DAY
@@ -217,6 +354,11 @@ def robust_rolling_rescue(
                 first_safety_breach_minute=true_score.first_safety_breach_minute,
                 committed_shifts=committed_count,
                 total_shifts=len(committed_shifts),
+                scenario_feasible=scenario_feasible,
+                scenario_failures=scenario_failures,
+                retry_count=retry_count,
+                accepted=accepted_window,
+                rejection_reason=rejection_reason,
             )
         )
 
@@ -224,14 +366,20 @@ def robust_rolling_rescue(
         round_index += 1
 
     # Final validation against true instance over full horizon
+    output_solution = (
+        truncate_solution(current_solution, committed_day * MINUTES_PER_DAY)
+        if config.committed_output_only
+        else current_solution
+    )
+
     final_score = score_prefix_with_feasibility_tail(
         instance,
-        current_solution,
-        score_days=horizon_days,
-        feasibility_days=horizon_days,
+        output_solution,
+        score_days=max(1, committed_day if config.committed_output_only else horizon_days),
+        feasibility_days=max(1, committed_day if config.committed_output_only else horizon_days),
     )
     emit(
-        f"FINAL: shifts={len(current_solution.shifts)} "
+        f"FINAL: shifts={len(output_solution.shifts)} "
         f"errors={final_score.feasibility_errors} "
         f"hard={final_score.hard_violations} "
         f"feasible={final_score.feasible} "
@@ -239,18 +387,83 @@ def robust_rolling_rescue(
     )
 
     # Reindex shifts and apply final physics clipping to prevent any residual overfills
-    final_solution = clip_to_tank_capacity(
-        instance,
-        Solution(
-            shifts=tuple(
-                replace(shift, index=i)
-                for i, shift in enumerate(
-                    sorted(current_solution.shifts, key=lambda s: (s.start, s.driver))
-                )
+    indexed_solution = Solution(
+        shifts=tuple(
+            replace(shift, index=i)
+            for i, shift in enumerate(
+                sorted(output_solution.shifts, key=lambda s: (s.start, s.driver))
             )
-        ),
+        )
+    )
+    final_solution = (
+        clip_to_tank_capacity(instance, indexed_solution)
+        if config.final_clip_capacity
+        else indexed_solution
     )
     return final_solution, steps
+
+
+def _validate_committed_scenarios(
+    instance: Instance,
+    solution: Solution,
+    distribution: ForecastDistribution | None,
+    commit_end_day: int,
+) -> tuple[bool, int]:
+    if distribution is None or distribution.sample_count() == 0:
+        return True, 0
+    scenario_count = distribution.sample_count()
+    failures = 0
+    for scenario_index in range(scenario_count):
+        scenario_instance = build_scenario_instance_from_distribution(
+            instance,
+            distribution,
+            scenario_index,
+        )
+        score = score_prefix_with_feasibility_tail(
+            scenario_instance,
+            solution,
+            score_days=commit_end_day,
+            feasibility_days=commit_end_day,
+        )
+        if not score.feasible:
+            failures += 1
+    return failures == 0, failures
+
+
+def _accept_window(
+    incumbent_score: ContestScore,
+    candidate_score: ContestScore,
+    scenario_failures: int,
+) -> tuple[bool, str]:
+    if incumbent_score.feasible and not candidate_score.feasible:
+        return False, "rejected: infeasible true prefix would replace feasible incumbent"
+    if candidate_score.hard_violations > incumbent_score.hard_violations and not candidate_score.feasible:
+        return False, "rejected: hard violations worse than incumbent"
+    if scenario_failures > 0 and incumbent_score.feasible:
+        return False, "rejected: scenario validation failed for feasible incumbent"
+    return True, ""
+
+
+def _mode_sigmas(config: RollingCGConfig) -> tuple[float, float]:
+    if config.mode == "robust":
+        return max(config.plan_sigma, 0.20), max(config.buffer_sigma, 0.40)
+    return config.plan_sigma, config.buffer_sigma
+
+
+def _mode_hedge_values(
+    config: RollingCGConfig,
+    attempt: int,
+    plan_percentile: float,
+    buffer_percentile: float,
+    capacity_buffer: float,
+) -> tuple[float, float, float]:
+    if config.mode != "robust":
+        return plan_percentile, buffer_percentile, capacity_buffer
+    return (
+        max(plan_percentile, min(99.0, 90.0 + attempt * config.percentile_retry_step)),
+        max(buffer_percentile, min(99.0, 95.0 + attempt * config.percentile_retry_step)),
+        max(capacity_buffer, min(0.30, 0.10 + attempt * config.capacity_buffer_retry_step)),
+    )
 
 
 def clip_to_tank_capacity(instance: Instance, solution: Solution) -> Solution:
@@ -307,7 +520,19 @@ def clip_to_tank_capacity(instance: Instance, solution: Solution) -> Solution:
                 new_ops.append(replace(op, quantity=allowed[(shift.index, op_idx)]))
             else:
                 new_ops.append(op)
-        new_shifts.append(replace(shift, operations=tuple(new_ops)))
+        positive_quantity = sum(op.quantity for op in new_ops if op.quantity > 0)
+        remaining_load = positive_quantity
+        balanced_ops = []
+        for op in new_ops:
+            if op.quantity < 0:
+                load = min(-op.quantity, remaining_load)
+                remaining_load -= load
+                if load > 1e-6:
+                    balanced_ops.append(replace(op, quantity=-load))
+            elif abs(op.quantity) > 1e-6:
+                balanced_ops.append(op)
+        if balanced_ops:
+            new_shifts.append(replace(shift, operations=tuple(balanced_ops)))
 
     return Solution(shifts=tuple(new_shifts))
 

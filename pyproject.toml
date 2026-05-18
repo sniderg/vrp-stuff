@@ -13,6 +13,9 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+]
 milp = [
     "gurobipy>=12.0.0",
     "highspy>=1.12.0",

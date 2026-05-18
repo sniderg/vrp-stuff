@@ -92,6 +92,17 @@ from .solver.targeted_rescue import RescueConfig, targeted_rescue
 from .solver.column_loop import ColumnLoopConfig, column_generation_rescue
 from .solver.alns import ALNSConfig, alns_rescue
 from .solver.rolling_cg import RollingCGConfig, robust_rolling_rescue
+from .solver.scenario import (
+    load_forecast_distribution,
+    route_wrapped_dummy_distribution,
+    write_forecast_distribution_csv,
+)
+from .solver.robust_batch import (
+    default_b_targets,
+    robust_b_config,
+    run_robust_batch,
+    write_results_csv,
+)
 
 
 def cmd_highs_select(args: argparse.Namespace) -> int:
@@ -276,7 +287,13 @@ def cmd_alns_rescue(args: argparse.Namespace) -> int:
 def cmd_robust_rolling_rescue(args: argparse.Namespace) -> int:
     instance = load_instance(args.instance_xml)
     baseline = load_solution(args.solution_xml)
+    forecast_distribution = (
+        load_forecast_distribution(instance, args.forecast_input)
+        if args.forecast_input is not None
+        else None
+    )
     config = RollingCGConfig(
+        mode=args.mode,
         horizon_days=args.horizon_days,
         commit_days=args.commit_days,
         lookahead_days=args.lookahead_days,
@@ -299,6 +316,10 @@ def cmd_robust_rolling_rescue(args: argparse.Namespace) -> int:
         normalize_source_loads=not args.no_normalize_source_loads,
         quantity_objective=args.quantity_objective,
         capacity_buffer=args.capacity_buffer,
+        max_hedge_retries=args.max_hedge_retries,
+        forecast_distribution=forecast_distribution,
+        max_rounds=args.max_rounds,
+        committed_output_only=args.committed_output_only,
     )
     solution, steps = robust_rolling_rescue(
         instance, baseline, config=config, progress=print
@@ -310,13 +331,146 @@ def cmd_robust_rolling_rescue(args: argparse.Namespace) -> int:
     solution = rebalance_drivers(instance, solution)
     save_solution(solution, args.output_xml)
     print(f"Saved robust rolling solution to {args.output_xml}")
-    print("round,commit_start,commit_end,solve_end,cg_iters,feasible,errors,hard,first_breach,committed_shifts,total_shifts")
+    print("round,commit_start,commit_end,solve_end,cg_iters,feasible,errors,hard,first_breach,committed_shifts,total_shifts,scenario_feasible,scenario_failures,retry_count,accepted,rejection_reason")
     for step in steps:
         print(
             f"{step.round_index},{step.commit_start_day},{step.commit_end_day},"
             f"{step.solve_end_day},{step.cg_iterations},{step.feasible},"
             f"{step.feasibility_errors},{step.hard_violations},"
-            f"{step.first_safety_breach_minute},{step.committed_shifts},{step.total_shifts}"
+            f"{step.first_safety_breach_minute},{step.committed_shifts},{step.total_shifts},"
+            f"{step.scenario_feasible},{step.scenario_failures},{step.retry_count},"
+            f"{step.accepted},{step.rejection_reason}"
+        )
+    return 0
+
+
+def cmd_robust_batch_rescue(args: argparse.Namespace) -> int:
+    from dataclasses import replace
+
+    presets = default_b_targets()
+    requested = [name.strip() for name in args.instances.split(",") if name.strip()]
+    unknown = [name for name in requested if name not in presets]
+    if unknown:
+        raise SystemExit(f"Unknown B instance preset(s): {','.join(unknown)}")
+    targets = [presets[name] for name in requested]
+    if args.horizons != "auto":
+        horizon_days = int(args.horizons)
+        targets = [replace(target, horizon_days=horizon_days) for target in targets]
+    config = robust_b_config(quick=args.quick)
+    if args.seed is not None:
+        config = replace(config, scenario_seed=args.seed)
+    results = run_robust_batch(
+        targets,
+        args.output_dir,
+        config=config,
+        progress=print,
+        rebalance=not args.no_rebalance,
+    )
+    csv_path = args.output_dir / "robust_batch_results.csv"
+    write_results_csv(results, csv_path)
+    print(f"Saved robust batch summary to {csv_path}")
+    print("instance,horizon_days,feasible,errors,hard,first_breach,cost,scenario_failures,max_retry_count,output_xml")
+    for result in results:
+        print(
+            f"{result.instance},{result.horizon_days},{result.feasible},"
+            f"{result.feasibility_errors},{result.hard_violations},"
+            f"{result.first_safety_breach_minute},{result.scored_estimated_cost:.6f},"
+            f"{result.scenario_failures},{result.max_retry_count},{result.output_xml}"
+        )
+    return 0
+
+
+def cmd_dummy_route_ci(args: argparse.Namespace) -> int:
+    instance = load_instance(args.instance_xml)
+    solution = load_solution(args.solution_xml)
+    quantiles = tuple(float(value) for value in args.quantiles.split(",") if value.strip())
+    distribution = route_wrapped_dummy_distribution(
+        instance,
+        solution,
+        present_day=args.present_day,
+        quantiles=quantiles,
+        base_relative_width=args.base_relative_width,
+        daily_relative_growth=args.daily_relative_growth,
+        max_relative_width=args.max_relative_width,
+        route_anchor_width=args.route_anchor_width,
+    )
+    write_forecast_distribution_csv(distribution, args.output_csv)
+    print(f"Saved dummy route-wrapped forecast CI to {args.output_csv}")
+    print(
+        "customers,{},quantiles,{},rows,{}".format(
+            len(distribution.deterministic),
+            ",".join(str(q) for q in sorted(distribution.quantiles)),
+            sum(len(path) for path in distribution.deterministic.values()),
+        )
+    )
+    return 0
+
+
+def cmd_week_ahead_ci_rescue(args: argparse.Namespace) -> int:
+    instance = load_instance(args.instance_xml)
+    baseline = load_solution(args.solution_xml)
+    forecast_distribution = load_forecast_distribution(instance, args.forecast_input)
+    config = RollingCGConfig(
+        mode=args.mode,
+        horizon_days=args.planning_horizon_days,
+        commit_days=7,
+        lookahead_days=args.lookahead_days,
+        n_scenarios=0,
+        plan_percentile=args.plan_percentile,
+        buffer_percentile=args.buffer_percentile,
+        cg_iterations=args.cg_iterations,
+        max_pressure_customers=args.max_pressure_customers,
+        samples_per_customer=args.samples_per_customer,
+        max_chain_length=args.max_chain_length,
+        nearest_chain_neighbors=args.nearest_chain_neighbors,
+        max_candidates_per_iteration=args.max_candidates_per_iteration,
+        target_fill_ratio=args.target_fill_ratio,
+        multi_reload_columns=args.multi_reload_columns,
+        max_pre_service_fill_ratio=args.max_pre_service_fill_ratio,
+        normalize_source_loads=not args.no_normalize_source_loads,
+        quantity_objective=args.quantity_objective,
+        capacity_buffer=args.capacity_buffer,
+        max_hedge_retries=args.max_hedge_retries,
+        forecast_distribution=forecast_distribution,
+        max_rounds=1,
+        committed_output_only=True,
+        final_clip_capacity=False,
+    )
+    solution, steps = robust_rolling_rescue(
+        instance,
+        baseline,
+        config=config,
+        progress=print,
+    )
+    from .solver.highs_selector import rebalance_drivers
+    if not args.no_rebalance:
+        print("Rebalancing driver workloads...")
+        solution = rebalance_drivers(instance, solution)
+    save_solution(solution, args.output_xml)
+    score = score_prefix_with_feasibility_tail(
+        instance,
+        solution,
+        score_days=7,
+        feasibility_days=7,
+        ignore_tail_call_ins=True,
+    )
+    print(f"Saved week-ahead CI solution to {args.output_xml}")
+    print(
+        "week_days,7,feasible,{},{},{},cost,{:.2f},shifts,{}".format(
+            score.feasibility_errors,
+            score.hard_violations,
+            score.feasible,
+            score.scored_estimated_cost,
+            len(solution.shifts),
+        )
+    )
+    print("round,commit_start,commit_end,solve_end,cg_iters,feasible,errors,hard,scenario_failures,accepted,rejection_reason")
+    for step in steps:
+        print(
+            f"{step.round_index},{step.commit_start_day},{step.commit_end_day},"
+            f"{step.solve_end_day},{step.cg_iterations},{step.feasible},"
+            f"{step.feasibility_errors},{step.hard_violations},"
+            f"{step.scenario_failures},{step.accepted},{step.rejection_reason}"
         )
     return 0
 
@@ -1429,6 +1583,11 @@ def build_parser() -> argparse.ArgumentParser:
     rolling_cg.add_argument("instance_xml", type=Path)
     rolling_cg.add_argument("solution_xml", type=Path)
     rolling_cg.add_argument("output_xml", type=Path)
+    rolling_cg.add_argument(
+        "--mode",
+        choices=("deterministic", "hedged", "robust"),
+        default="hedged",
+    )
     rolling_cg.add_argument("--horizon-days", type=int, default=30)
     rolling_cg.add_argument("--commit-days", type=int, default=7)
     rolling_cg.add_argument("--lookahead-days", type=int, default=7)
@@ -1451,7 +1610,62 @@ def build_parser() -> argparse.ArgumentParser:
     rolling_cg.add_argument("--no-normalize-source-loads", action="store_true")
     rolling_cg.add_argument("--quantity-objective", choices=("min-delivered", "max-delivered"), default="min-delivered")
     rolling_cg.add_argument("--capacity-buffer", type=float, default=0.05)
+    rolling_cg.add_argument("--max-hedge-retries", type=int, default=2)
+    rolling_cg.add_argument("--max-rounds", type=int)
+    rolling_cg.add_argument("--committed-output-only", action="store_true")
+    rolling_cg.add_argument(
+        "--forecast-input",
+        type=Path,
+        help="External forecast CSV/JSON/JSONL/parquet with item_id/customer_id, step or timestamp, and quantile columns.",
+    )
     rolling_cg.set_defaults(func=cmd_robust_rolling_rescue)
+
+    robust_batch = subparsers.add_parser("robust-batch-rescue")
+    robust_batch.add_argument("output_dir", type=Path)
+    robust_batch.add_argument("--instances", default="V2.12,V2.18")
+    robust_batch.add_argument("--horizons", choices=("auto", "14", "21", "30"), default="auto")
+    robust_batch.add_argument("--seed", type=int)
+    robust_batch.add_argument("--quick", action="store_true")
+    robust_batch.add_argument("--no-rebalance", action="store_true")
+    robust_batch.set_defaults(func=cmd_robust_batch_rescue)
+
+    dummy_route_ci = subparsers.add_parser("dummy-route-ci")
+    dummy_route_ci.add_argument("instance_xml", type=Path)
+    dummy_route_ci.add_argument("solution_xml", type=Path)
+    dummy_route_ci.add_argument("output_csv", type=Path)
+    dummy_route_ci.add_argument("--present-day", type=int, default=0)
+    dummy_route_ci.add_argument("--quantiles", default="50,75,90,95")
+    dummy_route_ci.add_argument("--base-relative-width", type=float, default=0.05)
+    dummy_route_ci.add_argument("--daily-relative-growth", type=float, default=0.04)
+    dummy_route_ci.add_argument("--max-relative-width", type=float, default=0.60)
+    dummy_route_ci.add_argument("--route-anchor-width", type=float, default=0.08)
+    dummy_route_ci.set_defaults(func=cmd_dummy_route_ci)
+
+    week_ahead_ci = subparsers.add_parser("week-ahead-ci-rescue")
+    week_ahead_ci.add_argument("instance_xml", type=Path)
+    week_ahead_ci.add_argument("solution_xml", type=Path)
+    week_ahead_ci.add_argument("forecast_input", type=Path)
+    week_ahead_ci.add_argument("output_xml", type=Path)
+    week_ahead_ci.add_argument("--mode", choices=("hedged", "robust"), default="hedged")
+    week_ahead_ci.add_argument("--planning-horizon-days", type=int, default=30)
+    week_ahead_ci.add_argument("--lookahead-days", type=int, default=21)
+    week_ahead_ci.add_argument("--plan-percentile", type=float, default=75.0)
+    week_ahead_ci.add_argument("--buffer-percentile", type=float, default=90.0)
+    week_ahead_ci.add_argument("--cg-iterations", type=int, default=5)
+    week_ahead_ci.add_argument("--max-pressure-customers", type=int, default=12)
+    week_ahead_ci.add_argument("--samples-per-customer", type=int, default=8)
+    week_ahead_ci.add_argument("--max-chain-length", type=int, default=4)
+    week_ahead_ci.add_argument("--nearest-chain-neighbors", type=int, default=10)
+    week_ahead_ci.add_argument("--max-candidates-per-iteration", type=int, default=1200)
+    week_ahead_ci.add_argument("--target-fill-ratio", type=float, default=0.95)
+    week_ahead_ci.add_argument("--multi-reload-columns", action="store_true")
+    week_ahead_ci.add_argument("--max-pre-service-fill-ratio", type=float, default=0.95)
+    week_ahead_ci.add_argument("--no-normalize-source-loads", action="store_true")
+    week_ahead_ci.add_argument("--quantity-objective", choices=("min-delivered", "max-delivered"), default="min-delivered")
+    week_ahead_ci.add_argument("--capacity-buffer", type=float, default=0.05)
+    week_ahead_ci.add_argument("--max-hedge-retries", type=int, default=2)
+    week_ahead_ci.add_argument("--no-rebalance", action="store_true")
+    week_ahead_ci.set_defaults(func=cmd_week_ahead_ci_rescue)
 
     mds_map = subparsers.add_parser("mds-map")
 

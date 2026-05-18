@@ -1,0 +1,124 @@
+------------------------
+Summary of the instances
+
+
+Changelog
+v1.0        First issue        10/07/2015        Michele Quattrone/Rodrigue Fokouop
+v1.1        Update       	12/09/2015        Michele Quattrone/Rodrigue Fokouop
+------------------------
+
+
+The updated list of the instances for the Roadef/Euro challenge 2016 are the following:
+
+
+
+
+---------------------------------------------------
+V1 instances (compliant with the V1 specifications)
+---------------------------------------------------
+
+
+
+
+Instance_V_1.1.xml
+------------------
+This instance is directly inspired by the Serious Game but we adapt it to be compliant to the V1 specifications. 
+The common points with the serious game are many, but there are some noticeable differences: 
+        -> the horizon is 30 days.
+        -> for sake of gamification, the serious game has penalties on long shifts, which is forbidden in the challenge.
+        -> in the Serious game, there is also a penalty for run-outs, which is forbidden in the challenge (and in reality too!). We changed some customer initial levels to avoid that.
+
+
+nb of customers: 12
+nb of drivers: 2
+nb of trailers: 2
+Optimisation horizon: 720 hours (30 days)
+
+
+
+
+Instance_V_1.2.xml
+------------------
+This is a variant of the Instance_V_1.1.xml. The most noticeable differences are the capacities of the customers' tanks.
+
+
+nb of customers: 12
+nb of drivers: 2
+nb of trailers: 2
+Optimisation horizon: 720 hours (30 days)
+
+
+
+
+Instance_V_1.3.xml
+-----------------------------------------
+This instance is an excerpt of a real world problem, although very small. However, it enables to test many of the characteristics of the mathematical model V1 and prepare you for harder instances.
+
+
+nb of customers: 53
+nb of drivers: 1
+nb of trailers: 1
+Optimisation horizon: 240 hours (10 days)
+
+
+
+
+Instance_V_1.4.xml
+------------------
+It is a variant of the Instance_V_1.3.xml, with an additional driver and trailer
+
+
+nb of customers: 53
+nb of drivers: 2
+nb of trailers: 2
+Optimisation horizon: 240 hours (10 days)
+
+
+
+
+Instance_V_1.5.xml
+------------------
+This instance is an excerpt of a real problem. It feature one trailer, with two drivers which are available 12 hours each in order to make it possible to run the trailer all the day. There is no superposition between drivers availabilities.
+
+
+nb of customers: 54
+nb of drivers: 2
+nb of trailers: 1
+Optimisation horizon: 240 hours (10 days)
+
+
+
+
+Instance_V_1.6.xml
+------------------
+It is a variant of the Instance_V_1.5.xml, but with an enlarged optimization horizon.
+
+
+nb of customers: 54
+nb of drivers: 2
+nb of trailers: 1
+Optimisation horizon: 35 days
+
+
+
+
+Instance_V_1.10.xml
+------------------
+This instance is an excerpt of a real problem. The dispatching region is more extended than the other test cases. There is only one driver per trailer, available 12 hours per day.
+
+
+nb of customers: 89
+nb of drivers: 3
+nb of trailers: 3
+Optimisation horizon: 240 hours (10 days)
+
+
+Instance_V_1.11.xml
+------------------
+This instance is an excerpt of a real problem. The dispatching region is more extended than the other test cases. There is only one driver per trailer, available 12 hours per day.
+
+
+nb of customers: 89
+nb of drivers: 3
+nb of trailers: 3
+Optimisation horizon: 240 hours (10 days)

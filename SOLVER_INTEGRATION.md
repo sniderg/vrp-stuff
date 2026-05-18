@@ -3,13 +3,19 @@
 ## Current Architecture
 
 The production solver pipeline is a **batched column-generation rescue loop**
-implemented in `roadef_tools/solver/`. ALNS scaffolding (`run_alns_probe.py`,
-`roadef_tools/alns_state.py`) is superseded by this approach.
+implemented in `roadef_tools/solver/`. A newer matheuristic ALNS layer now wraps
+the column loop for larger horizons: it destroys route neighborhoods, repairs
+with column generation + HiGHS, and accepts/rejects with simulated annealing.
+Older operation-level ALNS scaffolding (`roadef_tools/alns_state.py`) is
+superseded by this route-level ALNS path.
 
 ### Module Map
 
 | Module | Role |
 |---|---|
+| `solver/alns.py` | Route-level ALNS controller with adaptive operator weights and simulated-annealing acceptance |
+| `solver/destroy.py` | ALNS destroy operators: pressure-band, related-customer, route-block, and resource-conflict removal |
+| `solver/pressure.py` | Shared customer pressure extraction from tank safety/overfill events |
 | `solver/column_loop.py` | Outer CG rescue loop driver |
 | `solver/targeted_rescue.py` | Single-iteration rescue: pressure detection, candidate generation, HiGHS selection |
 | `solver/highs_selector.py` | HiGHS master problem: shift selection with pressure pricing and order-coverage constraints |
@@ -47,6 +53,16 @@ config = ColumnLoopConfig(
 best_solution, steps = column_generation_rescue(instance, baseline, config=config)
 ```
 
+**Route-level ALNS matheuristic:**
+```python
+from roadef_tools.solver.alns import alns_rescue, ALNSConfig
+config = ALNSConfig(
+    start_day=0, end_day=21, replace_from_day=3,
+    iterations=20, repair_iterations=2,
+)
+best_solution, steps = alns_rescue(instance, baseline, config=config)
+```
+
 **Single targeted rescue pass:**
 ```python
 from roadef_tools.solver.targeted_rescue import targeted_rescue, RescueConfig
@@ -70,6 +86,12 @@ rescued, report = targeted_rescue(instance, solution, config=config)
 .venv/bin/python -m roadef_tools.cli column-generation-rescue \
   INSTANCE.xml BASELINE.xml OUTPUT.xml \
   --start-day 0 --end-day 14 --iterations 10
+
+# Run route-level ALNS around the column-generation repair
+.venv/bin/python -m roadef_tools.cli alns-rescue \
+  INSTANCE.xml BASELINE.xml OUTPUT.xml \
+  --start-day 0 --end-day 21 --replace-from-day 3 \
+  --iterations 20 --repair-iterations 2
 
 # Run single targeted rescue pass
 .venv/bin/python -m roadef_tools.cli targeted-rescue \
