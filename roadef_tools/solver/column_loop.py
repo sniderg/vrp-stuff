@@ -7,6 +7,7 @@ from ..contest import score_prefix_with_feasibility_tail
 from ..inventory import tank_events
 from ..model import Instance, Shift, Solution
 from ..highs_repair import repair_quantities_with_highs
+from ..highs_time_opt import optimize_solution_times
 from ..route_cache import RouteCache
 from .highs_selector import (
     _candidate_pressure_bonus,
@@ -159,6 +160,7 @@ def column_generation_rescue(
             end_day=config.end_day,
             pressure_pricing=True,
         )
+        selected = optimize_solution_times(instance, selected)
         if config.normalize_source_loads:
             selected = normalize_source_loads(instance, selected)
         repaired, repair_report = repair_quantities_with_highs(
@@ -170,7 +172,7 @@ def column_generation_rescue(
         )
         if config.normalize_source_loads:
             repaired = normalize_source_loads(instance, repaired)
-        current = repaired if "Optimal" in repair_report.status or "Feasible" in repair_report.status else selected
+        current = repaired
         score = score_prefix_with_feasibility_tail(
             instance,
             current,

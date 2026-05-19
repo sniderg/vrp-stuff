@@ -6,6 +6,7 @@ from ..inventory import tank_events
 from ..model import Instance, Operation, Shift, Solution
 from ..rules import derive_solution, is_time_window_valid, is_trailer_allowed
 from ..highs_repair import repair_quantities_with_highs
+from ..highs_time_opt import optimize_solution_times
 from ..route_cache import RouteCache
 from .highs_selector import select_shifts_with_highs
 
@@ -81,6 +82,7 @@ def targeted_rescue(
     rescued = Solution(
         shifts=tuple(replace(shift, index=i) for i, shift in enumerate(all_shifts))
     )
+    rescued = optimize_solution_times(instance, rescued)
 
     if config.normalize_source_loads:
         rescued = normalize_source_loads(instance, rescued)

@@ -237,15 +237,17 @@ def repair_with_highs_selection(
     
     if solved_by_gurobi:
         print(f"Gurobi Status: {status}")
+        has_solution = values is not None
     else:
         highs.run()
         status = highs.modelStatusToString(highs.getModelStatus())
         print(f"HiGHS Status: {status}")
-        if "Optimal" in status or "Feasible" in status:
+        has_solution = highs.getInfo().primal_solution_status == 2 or "Optimal" in status or "Feasible" in status
+        if has_solution:
             values = highs.getSolution().col_value
             
     repaired = working
-    if ("Optimal" in status or "Feasible" in status) and values is not None:
+    if has_solution and values is not None:
         q_values = [values[i] for i in q_indices]
         load_values = [values[i] for i in load_indices]
         repaired = _apply_quantities(
