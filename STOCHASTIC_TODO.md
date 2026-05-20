@@ -46,3 +46,13 @@ Goal: use hedged/statistical forecasts without losing deterministic feasibility.
 - [x] A1.1 first 7 days remains feasible in hedged mode.
 - [x] Infeasible candidates are rejected, not written as benchmark solutions.
 - [x] Existing A-instance ratio conversion tests continue to pass.
+
+## Stage 6: Backtesting and Calibration Loop
+
+- [x] Convert quantile-only forecasts into fixed stress scenarios for
+      validation and backtesting.
+- [x] Add a scenario backtest harness with feasibility, cost, stockout/safety,
+      and overfill metrics.
+- [x] Expose a CLI backtest command without adding an optimizer dependency.
+- [x] Add historical realized-consumption ingestion for calibration reports.
+- [x] Add policy sweep support over robust solver parameters.

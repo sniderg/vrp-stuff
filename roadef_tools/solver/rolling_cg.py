@@ -15,13 +15,14 @@ from typing import Literal
 from typing import Callable
 
 from ..contest import ContestScore, score_prefix_with_feasibility_tail, truncate_solution
-from ..model import Instance, Solution
+from ..model import Instance, Shift, Solution
 from .column_loop import ColumnLoopConfig, column_generation_rescue
 from .scenario import (
     ForecastDistribution,
     build_hedged_instance_from_distribution,
     build_scenario_instance_from_distribution,
     generate_scenarios,
+    scenarios_from_distribution,
 )
 
 MINUTES_PER_DAY = 1440
@@ -65,6 +66,7 @@ class RollingCGConfig:
     committed_output_only: bool = False
     final_clip_capacity: bool = True
     progress_log_path: str | None = None
+    route_prior_candidates: tuple[Shift, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -247,6 +249,11 @@ def robust_rolling_rescue(
                 quantity_objective=config.quantity_objective,
                 commit_end_day=commit_end_day,
                 next_after_commit_day=min(commit_end_day + commit_stride, solve_end_day),
+                route_prior_candidates=tuple(
+                    shift
+                    for shift in config.route_prior_candidates
+                    if committed_day * MINUTES_PER_DAY <= shift.start < solve_end_day * MINUTES_PER_DAY
+                ),
             )
 
             window_solution, cg_steps = column_generation_rescue(
@@ -328,7 +335,7 @@ def robust_rolling_rescue(
                 distribution,
                 commit_end_day,
             )
-            scenario_count = distribution.sample_count()
+            scenario_count = distribution.scenario_count()
             scenario_failure_rate = (
                 scenario_failures / scenario_count if scenario_count else 0.0
             )
@@ -654,9 +661,12 @@ def _validate_committed_scenarios(
     distribution: ForecastDistribution | None,
     commit_end_day: int,
 ) -> tuple[bool, int]:
-    if distribution is None or distribution.sample_count() == 0:
+    if distribution is None:
         return True, 0
-    scenario_count = distribution.sample_count()
+    scenarios = scenarios_from_distribution(distribution)
+    scenario_count = max((len(paths) for paths in scenarios.values()), default=0)
+    if scenario_count == 0:
+        return True, 0
     failures = 0
     for scenario_index in range(scenario_count):
         scenario_instance = build_scenario_instance_from_distribution(

@@ -97,6 +97,27 @@ from .solver.scenario import (
     route_wrapped_dummy_distribution,
     write_forecast_distribution_csv,
 )
+from .solver.calibration import (
+    calibrate_forecast_distribution,
+    forecast_calibration_report,
+    load_calibration_csv,
+    write_calibration_csv,
+)
+from .solver.history import (
+    load_realized_consumption_history,
+    write_realized_consumption_csv,
+)
+from .solver.backtest import (
+    backtest_solution_against_distribution,
+    write_backtest_csv,
+    write_backtest_summary_csv,
+)
+from .solver.policy_sweep import (
+    load_policy_sweep_csv,
+    run_policy_sweep,
+    write_policy_sweep_results_csv,
+)
+from .solver.route_priors import load_route_prior_candidates, prior_shifts
 from .solver.robust_batch import (
     default_b_targets,
     robust_b_config,
@@ -292,6 +313,16 @@ def cmd_robust_rolling_rescue(args: argparse.Namespace) -> int:
         if args.forecast_input is not None
         else None
     )
+    if forecast_distribution is not None and args.calibration_input is not None:
+        forecast_distribution = calibrate_forecast_distribution(
+            forecast_distribution,
+            load_calibration_csv(args.calibration_input),
+        )
+    route_prior_candidates = (
+        prior_shifts(load_route_prior_candidates(instance, args.route_priors))
+        if args.route_priors is not None
+        else ()
+    )
     config = RollingCGConfig(
         mode=args.mode,
         horizon_days=args.horizon_days,
@@ -321,6 +352,7 @@ def cmd_robust_rolling_rescue(args: argparse.Namespace) -> int:
         max_rounds=args.max_rounds,
         committed_output_only=args.committed_output_only,
         progress_log_path=str(args.progress_log) if args.progress_log else None,
+        route_prior_candidates=route_prior_candidates,
     )
     solution, steps = robust_rolling_rescue(
         instance, baseline, config=config, progress=print
@@ -411,6 +443,22 @@ def cmd_week_ahead_ci_rescue(args: argparse.Namespace) -> int:
     instance = load_instance(args.instance_xml)
     baseline = load_solution(args.solution_xml)
     forecast_distribution = load_forecast_distribution(instance, args.forecast_input)
+    if args.calibration_input is not None:
+        forecast_distribution = calibrate_forecast_distribution(
+            forecast_distribution,
+            load_calibration_csv(args.calibration_input),
+        )
+    route_prior_candidates = (
+        prior_shifts(
+            load_route_prior_candidates(
+                instance,
+                args.route_priors,
+                end_day=args.planning_horizon_days,
+            )
+        )
+        if args.route_priors is not None
+        else ()
+    )
     config = RollingCGConfig(
         mode=args.mode,
         horizon_days=args.planning_horizon_days,
@@ -437,6 +485,7 @@ def cmd_week_ahead_ci_rescue(args: argparse.Namespace) -> int:
         committed_output_only=True,
         final_clip_capacity=False,
         progress_log_path=str(args.progress_log) if args.progress_log else None,
+        route_prior_candidates=route_prior_candidates,
     )
     solution, steps = robust_rolling_rescue(
         instance,
@@ -473,6 +522,98 @@ def cmd_week_ahead_ci_rescue(args: argparse.Namespace) -> int:
             f"{step.solve_end_day},{step.cg_iterations},{step.feasible},"
             f"{step.feasibility_errors},{step.hard_violations},"
             f"{step.scenario_failures},{step.accepted},{step.rejection_reason}"
+        )
+    return 0
+
+
+def cmd_scenario_backtest(args: argparse.Namespace) -> int:
+    instance = load_instance(args.instance_xml)
+    solution = load_solution(args.solution_xml)
+    distribution = load_forecast_distribution(instance, args.forecast_input)
+    percentiles = (
+        tuple(float(value) for value in args.percentiles.split(",") if value.strip())
+        if args.percentiles
+        else None
+    )
+    result = backtest_solution_against_distribution(
+        instance,
+        solution,
+        distribution,
+        horizon_days=args.horizon_days,
+        percentiles=percentiles,
+        ignore_tail_call_ins=not args.include_tail_call_ins,
+    )
+    if args.output_csv:
+        write_backtest_csv(result, args.output_csv)
+        print(f"wrote,{args.output_csv}")
+    if args.output_summary_csv:
+        write_backtest_summary_csv(result, args.output_summary_csv)
+        print(f"wrote_summary,{args.output_summary_csv}")
+    for key, value in result.summary.flat().items():
+        print(f"{key},{value}")
+    return 1 if args.fail_on_infeasible and result.summary.infeasible_scenarios else 0
+
+
+def cmd_consumption_history_check(args: argparse.Namespace) -> int:
+    rows = load_realized_consumption_history(args.history_csv)
+    if args.output_csv:
+        write_realized_consumption_csv(rows, args.output_csv)
+        print(f"wrote,{args.output_csv}")
+    print(f"rows,{len(rows)}")
+    print(f"customers,{len({row.customer_id for row in rows})}")
+    return 0
+
+
+def cmd_forecast_calibration(args: argparse.Namespace) -> int:
+    instance = load_instance(args.instance_xml)
+    distribution = load_forecast_distribution(instance, args.forecast_csv)
+    realized = load_realized_consumption_history(args.realized_csv)
+    rows = forecast_calibration_report(
+        distribution,
+        realized,
+        known_customers={customer.index for customer in instance.customers if not customer.call_in},
+    )
+    if args.output_csv:
+        write_calibration_csv(rows, args.output_csv)
+        print(f"wrote,{args.output_csv}")
+    for row in rows:
+        print(",".join(str(value) for value in row.flat().values()))
+    return 0
+
+
+def cmd_robust_policy_sweep(args: argparse.Namespace) -> int:
+    instance = load_instance(args.instance)
+    baseline = load_solution(args.baseline)
+    distribution = load_forecast_distribution(instance, args.forecast_input)
+    if args.calibration_input is not None:
+        distribution = calibrate_forecast_distribution(
+            distribution,
+            load_calibration_csv(args.calibration_input),
+        )
+    base_config = RollingCGConfig(
+        mode=args.mode,
+        horizon_days=args.horizon_days,
+        scenario_seed=args.scenario_seed,
+        forecast_distribution=distribution,
+        max_rounds=args.max_rounds,
+    )
+    policies = load_policy_sweep_csv(args.sweep_csv, base_config)
+    results = run_policy_sweep(
+        instance,
+        baseline,
+        distribution,
+        policies,
+        args.output_dir,
+        horizon_days=args.horizon_days,
+        progress=print,
+    )
+    csv_path = args.output_dir / "policy_sweep_results.csv"
+    write_policy_sweep_results_csv(results, csv_path)
+    print(f"wrote,{csv_path}")
+    for result in results:
+        print(
+            f"{result.policy_id},{result.feasible},{result.mean_cost:.6f},"
+            f"{result.failure_rate:.6f},{result.robust_score:.6f},{result.output_xml}"
         )
     return 0
 
@@ -1616,6 +1757,8 @@ def build_parser() -> argparse.ArgumentParser:
     rolling_cg.add_argument("--max-rounds", type=int)
     rolling_cg.add_argument("--committed-output-only", action="store_true")
     rolling_cg.add_argument("--progress-log", type=Path)
+    rolling_cg.add_argument("--calibration-input", type=Path)
+    rolling_cg.add_argument("--route-priors", type=Path)
     rolling_cg.add_argument(
         "--forecast-input",
         type=Path,
@@ -1668,8 +1811,50 @@ def build_parser() -> argparse.ArgumentParser:
     week_ahead_ci.add_argument("--capacity-buffer", type=float, default=0.05)
     week_ahead_ci.add_argument("--max-hedge-retries", type=int, default=2)
     week_ahead_ci.add_argument("--progress-log", type=Path)
+    week_ahead_ci.add_argument("--calibration-input", type=Path)
+    week_ahead_ci.add_argument("--route-priors", type=Path)
     week_ahead_ci.add_argument("--no-rebalance", action="store_true")
     week_ahead_ci.set_defaults(func=cmd_week_ahead_ci_rescue)
+
+    history_check = subparsers.add_parser("consumption-history-check")
+    history_check.add_argument("history_csv", type=Path)
+    history_check.add_argument("--output-csv", type=Path)
+    history_check.set_defaults(func=cmd_consumption_history_check)
+
+    forecast_calibration = subparsers.add_parser("forecast-calibration")
+    forecast_calibration.add_argument("instance_xml", type=Path)
+    forecast_calibration.add_argument("forecast_csv", type=Path)
+    forecast_calibration.add_argument("realized_csv", type=Path)
+    forecast_calibration.add_argument("--output-csv", type=Path)
+    forecast_calibration.set_defaults(func=cmd_forecast_calibration)
+
+    policy_sweep = subparsers.add_parser("robust-policy-sweep")
+    policy_sweep.add_argument("sweep_csv", type=Path)
+    policy_sweep.add_argument("--instance", type=Path, required=True)
+    policy_sweep.add_argument("--baseline", type=Path, required=True)
+    policy_sweep.add_argument("--forecast-input", type=Path, required=True)
+    policy_sweep.add_argument("--output-dir", type=Path, required=True)
+    policy_sweep.add_argument("--horizon-days", type=int, default=30)
+    policy_sweep.add_argument("--scenario-seed", type=int, default=42)
+    policy_sweep.add_argument("--mode", choices=("deterministic", "hedged", "robust"), default="hedged")
+    policy_sweep.add_argument("--max-rounds", type=int)
+    policy_sweep.add_argument("--calibration-input", type=Path)
+    policy_sweep.set_defaults(func=cmd_robust_policy_sweep)
+
+    scenario_backtest = subparsers.add_parser("scenario-backtest")
+    scenario_backtest.add_argument("instance_xml", type=Path)
+    scenario_backtest.add_argument("solution_xml", type=Path)
+    scenario_backtest.add_argument("forecast_input", type=Path)
+    scenario_backtest.add_argument("--horizon-days", type=int, required=True)
+    scenario_backtest.add_argument(
+        "--percentiles",
+        help="Comma-separated quantile stress paths to evaluate, e.g. 50,75,90,95.",
+    )
+    scenario_backtest.add_argument("--output-csv", type=Path)
+    scenario_backtest.add_argument("--output-summary-csv", type=Path)
+    scenario_backtest.add_argument("--include-tail-call-ins", action="store_true")
+    scenario_backtest.add_argument("--fail-on-infeasible", action="store_true")
+    scenario_backtest.set_defaults(func=cmd_scenario_backtest)
 
     mds_map = subparsers.add_parser("mds-map")
 

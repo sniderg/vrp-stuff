@@ -51,6 +51,7 @@ class ColumnLoopConfig:
     quantity_objective: str = "min-delivered"
     commit_end_day: int = 7
     next_after_commit_day: int | None = None
+    route_prior_candidates: tuple[Shift, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -116,7 +117,12 @@ def column_generation_rescue(
         baseline,
         config.replace_from_day * MINUTES_PER_DAY,
     )
-    pool = _dedupe_reindex(_baseline_window_shifts(baseline, _rescue_config(config)))
+    pool = _dedupe_reindex(
+        [
+            *_baseline_window_shifts(baseline, _rescue_config(config)),
+            *config.route_prior_candidates,
+        ]
+    )
     steps: list[ColumnLoopStep] = []
     best_solution = baseline
     best_score = score_prefix_with_feasibility_tail(

@@ -45,6 +45,7 @@ roadef_tools/
     ├── candidate_gen.py   # Route candidate generation
     ├── rolling_cg.py      # Rolling commit-and-advance with scenario hedging
     ├── scenario.py        # Scenario forecasting and distribution tools
+    ├── backtest.py        # Scenario/quantile route backtesting metrics
     ├── rolling_highs.py   # Rolling horizon HiGHS selection
     ├── cluster_greedy.py  # Cluster-aware greedy constructor
     └── greedy.py          # Basic greedy constructor
@@ -66,6 +67,43 @@ uv run python -m roadef_tools.cli week-ahead-ci-rescue \
   output.xml \
   --planning-horizon-days 30 \
   --lookahead-days 21
+```
+
+### Scenario backtest (robustness evaluation)
+
+Evaluates an existing route plan against external forecast samples or quantile
+paths. Quantile-only inputs are converted to fixed stress scenarios, so the same
+file can support both TabPFN-style CI forecasts and repeatable backtests.
+
+```bash
+uv run python -m roadef_tools.cli scenario-backtest \
+  INSTANCE.xml \
+  SOLUTION.xml \
+  forecast_ci.csv \
+  --horizon-days 7 \
+  --percentiles 50,75,90,95 \
+  --output-csv backtest_rows.csv
+```
+
+### Real-world robust loop
+
+Normalize realized consumption, calibrate forecast quantile coverage, and sweep
+robust solver policies without adding optimizer dependencies:
+
+```bash
+uv run python -m roadef_tools.cli consumption-history-check history.csv \
+  --output-csv normalized_history.csv
+
+uv run python -m roadef_tools.cli forecast-calibration \
+  INSTANCE.xml forecast_ci.csv normalized_history.csv \
+  --output-csv calibration.csv
+
+uv run python -m roadef_tools.cli robust-policy-sweep sweep.csv \
+  --instance INSTANCE.xml \
+  --baseline SOLUTION.xml \
+  --forecast-input forecast_ci.csv \
+  --calibration-input calibration.csv \
+  --output-dir sweep_out
 ```
 
 ### Column-generation rescue (current best approach)

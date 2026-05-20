@@ -10,6 +10,7 @@ from roadef_tools.solver.scenario import (
     generate_scenarios,
     load_forecast_distribution,
     route_wrapped_dummy_distribution,
+    scenarios_from_distribution,
     write_forecast_distribution_csv,
 )
 
@@ -143,6 +144,26 @@ def test_build_hedged_instance_from_quantile_distribution() -> None:
     customer = hedged.customer_by_point[2]
     assert customer.forecast == (10.0, 20.0, 30.0, 30.0)
     assert customer.capacity == 90.0
+
+
+def test_scenarios_from_quantile_distribution_interpolates_stress_paths() -> None:
+    distribution = ForecastDistribution(
+        deterministic={2: (10.0, 10.0)},
+        samples={},
+        quantiles={
+            50.0: {2: (10.0, 20.0)},
+            90.0: {2: (30.0, 60.0)},
+        },
+    )
+
+    scenarios = scenarios_from_distribution(
+        distribution,
+        percentiles=(50.0, 70.0, 95.0),
+    )
+
+    assert scenarios[2][0] == (10.0, 20.0)
+    assert scenarios[2][1] == (20.0, 40.0)
+    assert scenarios[2][2] == (30.0, 60.0)
 
 
 def test_forecast_distribution_from_wide_quantile_rows() -> None:

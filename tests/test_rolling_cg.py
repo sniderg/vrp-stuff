@@ -41,6 +41,28 @@ def test_validate_committed_scenarios_counts_infeasible_samples() -> None:
     assert failures == 2
 
 
+def test_validate_committed_scenarios_uses_quantile_stress_paths() -> None:
+    instance = tiny_instance(forecast=(1.0, 1.0))
+    distribution = ForecastDistribution(
+        deterministic={2: (1.0, 1.0)},
+        samples={},
+        quantiles={
+            50.0: {2: (1.0, 1.0)},
+            90.0: {2: (100.0, 100.0)},
+        },
+    )
+
+    feasible, failures = _validate_committed_scenarios(
+        instance,
+        Solution(shifts=()),
+        distribution,
+        commit_end_day=2,
+    )
+
+    assert feasible is False
+    assert failures == 1
+
+
 def test_accept_window_rejects_infeasible_replacement_for_feasible_incumbent() -> None:
     instance = tiny_instance(forecast=(1.0, 1.0))
     incumbent = Solution(shifts=())

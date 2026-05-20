@@ -62,6 +62,13 @@ class ForecastDistribution:
     def sample_count(self) -> int:
         return max((len(paths) for paths in self.samples.values()), default=0)
 
+    def scenario_count(self) -> int:
+        if self.sample_count():
+            return self.sample_count()
+        if self.quantiles:
+            return len(_default_scenario_percentiles(self))
+        return 0
+
 
 def load_forecast_distribution(
     instance: Instance,
@@ -638,7 +645,45 @@ def build_scenario_instance_from_distribution(
     distribution: ForecastDistribution,
     scenario_index: int,
 ) -> Instance:
-    return build_scenario_instance(instance, distribution.samples, scenario_index)
+    return build_scenario_instance(
+        instance,
+        scenarios_from_distribution(distribution),
+        scenario_index,
+    )
+
+
+def scenarios_from_distribution(
+    distribution: ForecastDistribution,
+    *,
+    percentiles: tuple[float, ...] | None = None,
+) -> dict[int, list[tuple[float, ...]]]:
+    """Return sample paths for scenario validation/backtesting.
+
+    If explicit samples are present, they are used unchanged.  Otherwise
+    quantile paths are converted into deterministic stress scenarios.  This is
+    deliberately not a random sampler; it gives stable p50/p75/p90/... paths
+    that make backtests and solver acceptance reproducible.
+    """
+    if distribution.samples:
+        return distribution.samples
+    if not distribution.quantiles:
+        return {}
+
+    requested = percentiles or _default_scenario_percentiles(distribution)
+    scenarios: dict[int, list[tuple[float, ...]]] = {
+        customer_id: [] for customer_id in distribution.deterministic
+    }
+    for percentile in requested:
+        for customer_id, deterministic_path in distribution.deterministic.items():
+            scenarios[customer_id].append(
+                _interpolated_quantile_path(
+                    distribution,
+                    percentile,
+                    customer_id,
+                    deterministic_path,
+                )
+            )
+    return scenarios
 
 
 def _build_quantile_hedged_instance(
@@ -686,3 +731,48 @@ def _build_quantile_hedged_instance(
             )
         )
     return replace(instance, customers=tuple(customers))
+
+
+def _default_scenario_percentiles(
+    distribution: ForecastDistribution,
+) -> tuple[float, ...]:
+    available = sorted(distribution.quantiles)
+    defaults = (50.0, 75.0, 90.0, 95.0)
+    selected: list[float] = []
+    for percentile in defaults:
+        if available:
+            selected.append(min(available, key=lambda value: abs(value - percentile)))
+    if not selected:
+        return ()
+    return tuple(dict.fromkeys(selected))
+
+
+def _interpolated_quantile_path(
+    distribution: ForecastDistribution,
+    percentile: float,
+    customer_id: int,
+    fallback: tuple[float, ...],
+) -> tuple[float, ...]:
+    available = sorted(
+        quantile
+        for quantile, customer_paths in distribution.quantiles.items()
+        if customer_id in customer_paths
+    )
+    if not available:
+        return fallback
+    percentile = _normalize_percentile(percentile)
+    if percentile <= available[0]:
+        return distribution.quantiles[available[0]][customer_id]
+    if percentile >= available[-1]:
+        return distribution.quantiles[available[-1]][customer_id]
+    lower = max(value for value in available if value <= percentile)
+    upper = min(value for value in available if value >= percentile)
+    lower_path = distribution.quantiles[lower][customer_id]
+    if lower == upper:
+        return lower_path
+    upper_path = distribution.quantiles[upper][customer_id]
+    weight = (percentile - lower) / (upper - lower)
+    return tuple(
+        max(0.0, low + (high - low) * weight)
+        for low, high in zip(lower_path, upper_path)
+    )
