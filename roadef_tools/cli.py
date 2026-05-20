@@ -354,6 +354,11 @@ def cmd_robust_rolling_rescue(args: argparse.Namespace) -> int:
         committed_output_only=args.committed_output_only,
         progress_log_path=str(args.progress_log) if args.progress_log else None,
         route_prior_candidates=route_prior_candidates,
+        selector_time_limit=args.selector_time_limit,
+        selector_mip_gap=args.selector_mip_gap,
+        selector_threads=args.selector_threads,
+        selector_mip_focus=args.selector_mip_focus,
+        selector_node_limit=args.selector_node_limit,
     )
     solution, steps = robust_rolling_rescue(
         instance, baseline, config=config, progress=print
@@ -487,6 +492,11 @@ def cmd_week_ahead_ci_rescue(args: argparse.Namespace) -> int:
         final_clip_capacity=False,
         progress_log_path=str(args.progress_log) if args.progress_log else None,
         route_prior_candidates=route_prior_candidates,
+        selector_time_limit=args.selector_time_limit,
+        selector_mip_gap=args.selector_mip_gap,
+        selector_threads=args.selector_threads,
+        selector_mip_focus=args.selector_mip_focus,
+        selector_node_limit=args.selector_node_limit,
     )
     solution, steps = robust_rolling_rescue(
         instance,
@@ -613,6 +623,11 @@ def cmd_robust_policy_sweep(args: argparse.Namespace) -> int:
         scenario_seed=args.scenario_seed,
         forecast_distribution=distribution,
         max_rounds=args.max_rounds,
+        selector_time_limit=args.selector_time_limit,
+        selector_mip_gap=args.selector_mip_gap,
+        selector_threads=args.selector_threads,
+        selector_mip_focus=args.selector_mip_focus,
+        selector_node_limit=args.selector_node_limit,
     )
     policies = load_policy_sweep_csv(args.sweep_csv, base_config)
     results = run_policy_sweep(
@@ -1776,6 +1791,11 @@ def build_parser() -> argparse.ArgumentParser:
     rolling_cg.add_argument("--progress-log", type=Path)
     rolling_cg.add_argument("--calibration-input", type=Path)
     rolling_cg.add_argument("--route-priors", type=Path)
+    rolling_cg.add_argument("--selector-time-limit", type=float, default=300.0)
+    rolling_cg.add_argument("--selector-mip-gap", type=float)
+    rolling_cg.add_argument("--selector-threads", type=int)
+    rolling_cg.add_argument("--selector-mip-focus", type=int)
+    rolling_cg.add_argument("--selector-node-limit", type=int)
     rolling_cg.add_argument(
         "--forecast-input",
         type=Path,
@@ -1830,6 +1850,11 @@ def build_parser() -> argparse.ArgumentParser:
     week_ahead_ci.add_argument("--progress-log", type=Path)
     week_ahead_ci.add_argument("--calibration-input", type=Path)
     week_ahead_ci.add_argument("--route-priors", type=Path)
+    week_ahead_ci.add_argument("--selector-time-limit", type=float, default=300.0)
+    week_ahead_ci.add_argument("--selector-mip-gap", type=float)
+    week_ahead_ci.add_argument("--selector-threads", type=int)
+    week_ahead_ci.add_argument("--selector-mip-focus", type=int)
+    week_ahead_ci.add_argument("--selector-node-limit", type=int)
     week_ahead_ci.add_argument("--no-rebalance", action="store_true")
     week_ahead_ci.set_defaults(func=cmd_week_ahead_ci_rescue)
 
@@ -1863,6 +1888,11 @@ def build_parser() -> argparse.ArgumentParser:
     policy_sweep.add_argument("--mode", choices=("deterministic", "hedged", "robust"), default="hedged")
     policy_sweep.add_argument("--max-rounds", type=int)
     policy_sweep.add_argument("--calibration-input", type=Path)
+    policy_sweep.add_argument("--selector-time-limit", type=float, default=300.0)
+    policy_sweep.add_argument("--selector-mip-gap", type=float)
+    policy_sweep.add_argument("--selector-threads", type=int)
+    policy_sweep.add_argument("--selector-mip-focus", type=int)
+    policy_sweep.add_argument("--selector-node-limit", type=int)
     policy_sweep.set_defaults(func=cmd_robust_policy_sweep)
 
     scenario_backtest = subparsers.add_parser("scenario-backtest")

@@ -185,6 +185,14 @@ def test_new_cli_commands_parse() -> None:
             "f.csv",
             "--output-dir",
             "out",
+            "--selector-time-limit",
+            "12",
+            "--selector-mip-gap",
+            "0.05",
+            "--selector-threads",
+            "2",
+            "--selector-mip-focus",
+            "1",
         ]
     )
 
@@ -192,6 +200,10 @@ def test_new_cli_commands_parse() -> None:
     assert solution_history.command == "solution-history-extract"
     assert calibration.command == "forecast-calibration"
     assert sweep.command == "robust-policy-sweep"
+    assert sweep.selector_time_limit == 12.0
+    assert sweep.selector_mip_gap == 0.05
+    assert sweep.selector_threads == 2
+    assert sweep.selector_mip_focus == 1
 
 
 def load_realized_consumption_history_rows(rows: list[dict[str, str]]):

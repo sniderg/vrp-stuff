@@ -67,6 +67,11 @@ class RollingCGConfig:
     final_clip_capacity: bool = True
     progress_log_path: str | None = None
     route_prior_candidates: tuple[Shift, ...] = ()
+    selector_time_limit: float = 300.0
+    selector_mip_gap: float | None = None
+    selector_threads: int | None = None
+    selector_mip_focus: int | None = None
+    selector_node_limit: int | None = None
 
 
 @dataclass(frozen=True)
@@ -254,6 +259,11 @@ def robust_rolling_rescue(
                     for shift in config.route_prior_candidates
                     if committed_day * MINUTES_PER_DAY <= shift.start < solve_end_day * MINUTES_PER_DAY
                 ),
+                selector_time_limit=config.selector_time_limit,
+                selector_mip_gap=config.selector_mip_gap,
+                selector_threads=config.selector_threads,
+                selector_mip_focus=config.selector_mip_focus,
+                selector_node_limit=config.selector_node_limit,
             )
 
             window_solution, cg_steps = column_generation_rescue(

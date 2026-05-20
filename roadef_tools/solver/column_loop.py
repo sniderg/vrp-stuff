@@ -10,6 +10,7 @@ from ..highs_repair import repair_quantities_with_highs
 from ..highs_time_opt import optimize_solution_times
 from ..route_cache import RouteCache
 from .highs_selector import (
+    SelectorConfig,
     _candidate_pressure_bonus,
     _inventory_pressure_by_customer,
     select_shifts_with_highs,
@@ -52,6 +53,11 @@ class ColumnLoopConfig:
     commit_end_day: int = 7
     next_after_commit_day: int | None = None
     route_prior_candidates: tuple[Shift, ...] = ()
+    selector_time_limit: float = 300.0
+    selector_mip_gap: float | None = None
+    selector_threads: int | None = None
+    selector_mip_focus: int | None = None
+    selector_node_limit: int | None = None
 
 
 @dataclass(frozen=True)
@@ -165,6 +171,13 @@ def column_generation_rescue(
             start_day=config.replace_from_day,
             end_day=config.end_day,
             pressure_pricing=True,
+            selector_config=SelectorConfig(
+                time_limit=config.selector_time_limit,
+                mip_gap=config.selector_mip_gap,
+                threads=config.selector_threads,
+                mip_focus=config.selector_mip_focus,
+                node_limit=config.selector_node_limit,
+            ),
         )
         selected = optimize_solution_times(instance, selected)
         if config.normalize_source_loads:

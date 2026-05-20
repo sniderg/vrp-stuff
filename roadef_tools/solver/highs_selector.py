@@ -3,6 +3,7 @@ from __future__ import annotations
 import numpy as np
 from dataclasses import dataclass, replace
 from typing import List, Dict, Tuple, Set
+import os
 
 from ..model import Instance, Solution, Shift, Operation
 from ..inventory import project_customer_inventory, tank_events
@@ -22,6 +23,17 @@ class _QuantityVariable:
     max_quantity: float
 
 
+@dataclass(frozen=True)
+class SelectorConfig:
+    solver: str | None = None
+    time_limit: float = 300.0
+    mip_gap: float | None = None
+    threads: int | None = None
+    mip_focus: int | None = None
+    node_limit: int | None = None
+    output: bool = False
+
+
 def select_shifts_with_highs(
     instance: Instance,
     prefix: Solution,
@@ -32,15 +44,24 @@ def select_shifts_with_highs(
     variable_quantities: bool = False,
     pressure_pricing: bool = True,
     baseline: Solution | None = None,
+    selector_config: SelectorConfig = SelectorConfig(),
 ) -> Solution:
-    try:
-        import highspy
-    except ModuleNotFoundError:
-        raise RuntimeError("highspy is not installed")
+    solver = (selector_config.solver or os.environ.get("ROADEF_SOLVER", "highs")).lower()
+    solved_by_gurobi = solver == "gurobi"
+    if solved_by_gurobi:
+        highs = _GurobiSelectorModel(selector_config)
+        integer_type = "B"
+        inf = 1e20
+    else:
+        try:
+            import highspy
+        except ModuleNotFoundError:
+            raise RuntimeError("highspy is not installed")
 
-    highs = highspy.Highs()
-    highs.setOptionValue("output_flag", False)
-    inf = highspy.kHighsInf
+        highs = highspy.Highs()
+        highs.setOptionValue("output_flag", selector_config.output)
+        inf = highspy.kHighsInf
+        integer_type = highspy.HighsVarType.kInteger
 
     # Variables: x_s is binary, 1 if candidate shift s is selected
     x_indices = []
@@ -83,7 +104,7 @@ def select_shifts_with_highs(
         
         highs.addCol(obj_coeff, 0.0, 1.0, 0, np.array([], dtype=np.int32), np.array([], dtype=np.float64))
         idx = highs.getNumCol() - 1
-        highs.changeColIntegrality(idx, highspy.HighsVarType.kInteger)
+        highs.changeColIntegrality(idx, integer_type)
         x_indices.append(idx)
 
     q_variables: list[_QuantityVariable] = []
@@ -134,15 +155,25 @@ def select_shifts_with_highs(
         )
     _add_order_coverage_constraints(highs, instance, prefix, candidates, x_indices)
 
-    highs.setOptionValue("time_limit", 300.0)
-    
-    from .gurobi_bridge import solve_with_gurobi_if_requested
-    status, values, solved_by_gurobi = solve_with_gurobi_if_requested(highs, time_limit=300.0)
-    
     if solved_by_gurobi:
+        status, values = highs.optimize()
         print(f"Gurobi Status: {status}")
+        if status == "GurobiError":
+            print("Falling back to HiGHS selector for this window.")
+            return select_shifts_with_highs(
+                instance,
+                prefix,
+                candidates,
+                start_day=start_day,
+                end_day=end_day,
+                variable_quantities=variable_quantities,
+                pressure_pricing=pressure_pricing,
+                baseline=baseline,
+                selector_config=replace(selector_config, solver="highs"),
+            )
         has_solution = values is not None
     else:
+        highs.setOptionValue("time_limit", selector_config.time_limit)
         highs.run()
         status = highs.modelStatusToString(highs.getModelStatus())
         print(f"HiGHS Status: {status}")
@@ -164,6 +195,78 @@ def select_shifts_with_highs(
         selected_shifts[i] = replace(s, index=i)
         
     return Solution(shifts=tuple(selected_shifts))
+
+
+class _GurobiSelectorModel:
+    def __init__(self, config: SelectorConfig):
+        try:
+            import gurobipy as gp
+        except ImportError as exc:
+            raise RuntimeError("gurobipy is not installed but ROADEF_SOLVER=gurobi was requested.") from exc
+
+        self.gp = gp
+        self.model = gp.Model("roadef_selector")
+        self.model.Params.OutputFlag = 1 if config.output else 0
+        self.model.Params.TimeLimit = config.time_limit
+        if config.mip_gap is not None:
+            self.model.Params.MIPGap = config.mip_gap
+        if config.threads is not None:
+            self.model.Params.Threads = config.threads
+        if config.mip_focus is not None:
+            self.model.Params.MIPFocus = config.mip_focus
+        if config.node_limit is not None:
+            self.model.Params.NodeLimit = config.node_limit
+        self.vars = []
+
+    def addCol(self, obj, lower, upper, _nnz, _indices, _coefficients):
+        var = self.model.addVar(lb=lower, ub=upper, obj=obj, vtype=self.gp.GRB.CONTINUOUS)
+        var.Start = lower if lower == upper else 0.0
+        self.vars.append(var)
+
+    def getNumCol(self):
+        return len(self.vars)
+
+    def changeColIntegrality(self, index, _integrality):
+        self.vars[index].VType = self.gp.GRB.BINARY
+
+    def changeColBounds(self, index, lower, upper):
+        self.vars[index].LB = lower
+        self.vars[index].UB = upper
+        if lower == upper:
+            self.vars[index].Start = lower
+
+    def addRow(self, lower, upper, nnz, indices, coefficients):
+        expr = self.gp.LinExpr()
+        for index, coefficient in zip(indices[:nnz], coefficients[:nnz]):
+            expr.add(self.vars[int(index)], float(coefficient))
+        inf = 1e19
+        if lower > -inf and upper < inf and abs(lower - upper) <= EPSILON:
+            self.model.addConstr(expr == float(lower))
+        else:
+            if lower > -inf:
+                self.model.addConstr(expr >= float(lower))
+            if upper < inf:
+                self.model.addConstr(expr <= float(upper))
+
+    def optimize(self) -> tuple[str, list[float] | None]:
+        self.model.ModelSense = self.gp.GRB.MINIMIZE
+        try:
+            self.model.optimize()
+        except self.gp.GurobiError as exc:
+            print(f"Gurobi Solver Warning: {exc}")
+            return "GurobiError", None
+        status_map = {
+            self.gp.GRB.OPTIMAL: "Optimal",
+            self.gp.GRB.INFEASIBLE: "Infeasible",
+            self.gp.GRB.UNBOUNDED: "Unbounded",
+            self.gp.GRB.TIME_LIMIT: "TimeLimit",
+            self.gp.GRB.NODE_LIMIT: "NodeLimit",
+            self.gp.GRB.INTERRUPTED: "Interrupted",
+        }
+        status = status_map.get(self.model.Status, f"Status{self.model.Status}")
+        if self.model.SolCount <= 0:
+            return status, None
+        return status, [var.X for var in self.vars]
 
 
 def _inventory_pressure_by_customer(
@@ -834,4 +937,3 @@ def _add_trailer_ending_inventory_constraints(
             np.array(row_indices, dtype=np.int32),
             np.array(row_coeffs, dtype=np.float64),
         )
-
