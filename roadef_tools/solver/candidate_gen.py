@@ -75,8 +75,20 @@ def generate_shift_candidates(
     inv_cache = InventoryCache(instance, scheduled)
     neighborhoods = _compute_neighborhoods(instance, k=config.neighborhood_size)
     source_lead_minutes = {c.index: min(instance.time_matrix[s.index][c.index] for s in instance.sources) for c in instance.customers}
-    FRAGILE_TANKS = {8, 45, 97, 129}
-    REMOTE_CLUSTER = {19, 60, 123, 127}
+    
+    # Dynamically find fragile and remote tanks to avoid index out-of-bounds on smaller instances
+    cust_list = [c for c in instance.customers if not c.call_in]
+    if cust_list:
+        def avg_f(c):
+            return sum(c.forecast) / len(c.forecast) if c.forecast else 1.0
+        cust_sorted_fragile = sorted(cust_list, key=lambda c: c.capacity / max(avg_f(c), 1e-3))
+        FRAGILE_TANKS = {c.index for c in cust_sorted_fragile[:4]}
+        cust_sorted_remote = sorted(cust_list, key=lambda c: instance.time_matrix[instance.base_index][c.index], reverse=True)
+        REMOTE_CLUSTER = {c.index for c in cust_sorted_remote[:4]}
+    else:
+        FRAGILE_TANKS = set()
+        REMOTE_CLUSTER = set()
+
     candidates: List[Shift] = []
 
     for day in range(start_day, end_day):

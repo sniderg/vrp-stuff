@@ -37,6 +37,7 @@ class _DeliveryVariable:
     original_quantity: float
     min_quantity: float
     max_quantity: float
+    is_fixed: bool
 
 
 @dataclass(frozen=True)
@@ -47,6 +48,7 @@ class _SourceLoadVariable:
     arrival: int
     original_quantity: float
     max_quantity: float
+    is_fixed: bool
 
 
 def repair_with_highs_selection(
@@ -58,6 +60,7 @@ def repair_with_highs_selection(
     ignore_tail_call_ins: bool = False,
     quantity_objective: str = "min-delivered",
     baseline: Solution | None = None,
+    fixed_prefix_minutes: int = 0,
 ) -> tuple[Solution, HighsRepairReport]:
     try:
         import highspy
@@ -78,12 +81,22 @@ def repair_with_highs_selection(
     variables: list[_DeliveryVariable] = []
     load_variables: list[_SourceLoadVariable] = []
     for shift in working.shifts:
+        is_fixed = (shift.start < fixed_prefix_minutes)
+        has_source = any(op.point in instance.source_by_point for op in shift.operations)
         for op_index, op in enumerate(shift.operations):
             customer = instance.customer_by_point.get(op.point)
             if customer and not customer.call_in:
-                min_quantity = customer.min_operation_quantity
-                if customer.orders:
-                    min_quantity = max(min_quantity, op.quantity)
+                if is_fixed:
+                    min_quantity = op.quantity
+                    max_quantity = op.quantity
+                else:
+                    min_quantity = customer.min_operation_quantity
+                    if customer.orders:
+                        min_quantity = max(min_quantity, op.quantity)
+                    if not has_source:
+                        max_quantity = op.quantity
+                    else:
+                        max_quantity = customer.capacity
                 variables.append(
                     _DeliveryVariable(
                         shift_index=shift.index,
@@ -93,21 +106,29 @@ def repair_with_highs_selection(
                         arrival_step=min(max(op.arrival // instance.unit, 0), instance.horizon - 1),
                         original_quantity=op.quantity,
                         min_quantity=min_quantity,
-                        max_quantity=customer.capacity,
+                        max_quantity=max_quantity,
+                        is_fixed=is_fixed,
                     )
                 )
                 continue
             source = instance.source_by_point.get(op.point)
             if source and op.quantity < -EPSILON:
                 trailer = instance.trailers[shift.trailer]
+                if is_fixed:
+                    original_qty = -op.quantity
+                    max_qty = -op.quantity
+                else:
+                    original_qty = -op.quantity
+                    max_qty = trailer.capacity
                 load_variables.append(
                     _SourceLoadVariable(
                         shift_index=shift.index,
                         operation_index=op_index,
                         point=op.point,
                         arrival=op.arrival,
-                        original_quantity=-op.quantity,
-                        max_quantity=trailer.capacity,
+                        original_quantity=original_qty,
+                        max_quantity=max_qty,
+                        is_fixed=is_fixed,
                     )
                 )
 
@@ -130,14 +151,14 @@ def repair_with_highs_selection(
             q_lower = var.min_quantity
         else:
             q_cost = 1.0
-            q_lower = 0.0
+            q_lower = var.min_quantity if var.is_fixed else 0.0
         highs.addCol(q_cost, q_lower, var.max_quantity, 0, np.array([], dtype=np.int32), np.array([], dtype=np.float64))
         q_indices.append(q_idx)
         col_count += 1
 
         if quantity_objective == "min-delivered":
             z_idx = col_count
-            z_lower = 1.0 if instance.customer_by_point[var.point].layover_customer else 0.0
+            z_lower = 1.0 if (instance.customer_by_point[var.point].layover_customer or var.is_fixed) else 0.0
             highs.addCol(-1000.0, z_lower, 1.0, 0, np.array([], dtype=np.int32), np.array([], dtype=np.float64))
             highs.changeColIntegrality(z_idx, highspy.HighsVarType.kInteger)
             z_indices.append(z_idx)
@@ -150,9 +171,10 @@ def repair_with_highs_selection(
 
     for var in load_variables:
         load_idx = col_count
+        lower_bound = var.max_quantity if var.is_fixed else 0.0
         highs.addCol(
             0.0,
-            0.0,
+            lower_bound,
             var.max_quantity,
             0,
             np.array([], dtype=np.int32),
@@ -199,12 +221,9 @@ def repair_with_highs_selection(
             qtys_z = [1.0] * len(indices) + [1.0]
             highs.addRow(lower_zero, inf, len(indices_z), np.array(indices_z, dtype=np.int32), np.array(qtys_z, dtype=np.float64))
 
-            # 3. Overfill slack
-            highs.addCol(1_000_000_000.0, 0.0, inf, 0, np.array([], dtype=np.int32), np.array([], dtype=np.float64))
-            slack_overfill_idx = highs.getNumCol() - 1
-            
-            indices_u = indices + [slack_overfill_idx]
-            qtys_u = [1.0] * len(indices) + [-1.0]
+            # 3. Overfill constraint (HARD)
+            indices_u = indices
+            qtys_u = [1.0] * len(indices)
             highs.addRow(-inf, upper, len(indices_u), np.array(indices_u, dtype=np.int32), np.array(qtys_u, dtype=np.float64))
 
     _add_trailer_load_constraints(
@@ -282,6 +301,7 @@ def repair_quantities_with_highs(
     ignore_tail_call_ins: bool = False,
     quantity_objective: str = "min-delivered",
     baseline: Solution | None = None,
+    fixed_prefix_minutes: int = 0,
 ) -> tuple[Solution, HighsRepairReport]:
     return repair_with_highs_selection(
         instance,
@@ -291,6 +311,7 @@ def repair_quantities_with_highs(
         ignore_tail_call_ins=ignore_tail_call_ins,
         quantity_objective=quantity_objective,
         baseline=baseline,
+        fixed_prefix_minutes=fixed_prefix_minutes,
     )
 
 

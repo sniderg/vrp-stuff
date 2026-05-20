@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
+from functools import lru_cache
 
 from ..inventory import tank_events
 from ..model import Instance, Operation, Shift, Solution
@@ -13,6 +14,12 @@ from .highs_selector import select_shifts_with_highs
 
 MINUTES_PER_DAY = 1440
 EPSILON = 1e-6
+
+
+@lru_cache(maxsize=100000)
+def _derive_single_shift(instance: Instance, shift: Shift):
+    return derive_solution(instance, Solution(shifts=(shift,)))[0]
+
 
 
 @dataclass(frozen=True)
@@ -98,6 +105,7 @@ def targeted_rescue(
             feasibility_days=full_horizon_days,
             quantity_objective=config.quantity_objective,
             baseline=baseline,
+            fixed_prefix_minutes=config.replace_from_day * MINUTES_PER_DAY,
         )
         if config.normalize_source_loads:
             rescued = normalize_source_loads(instance, rescued)
@@ -233,15 +241,33 @@ def generate_rescue_candidates(
                 )
                 return_time = instance.time_matrix[customer.index][instance.base_index]
 
-                for target_arrival in _arrival_samples(
-                    start_minute,
-                    latest_customer_arrival,
-                    config.samples_per_customer,
-                    config.sample_lookback_days,
-                ):
+                total_driving = (
+                    instance.time_matrix[instance.base_index][source.index]
+                    + instance.time_matrix[source.index][customer.index]
+                    + return_time
+                )
+                needs_return_layover = (
+                    customer.layover_customer
+                    and total_driving > driver.max_driving_duration
+                )
+                trail_time = customer.setup_time + return_time + (
+                    driver.layover_duration if needs_return_layover else 0
+                )
+                
+                target_arrivals = []
+                for window in driver.time_windows:
+                    min_arrival = max(start_minute + route_to_customer, window.start + route_to_customer)
+                    max_arrival = min(latest_customer_arrival, window.end - trail_time)
+                    if min_arrival <= max_arrival:
+                        target_arrivals.append(min_arrival)
+                        target_arrivals.append(max_arrival)
+                        if max_arrival - min_arrival > 120:
+                            target_arrivals.append((min_arrival + max_arrival) // 2)
+                
+                target_arrivals = sorted(list(set(target_arrivals)))
+                
+                for target_arrival in target_arrivals:
                     shift_start = target_arrival - route_to_customer
-                    if shift_start < start_minute:
-                        continue
                     source_arrival = (
                         shift_start + instance.time_matrix[instance.base_index][source.index]
                     )
@@ -297,19 +323,19 @@ def generate_rescue_candidates(
                         operations.append(Operation(source.index, source_arrival, -load_quantity))
                     operations.append(Operation(customer.index, arrival, quantity))
                     shift = Shift(
-                        index=len(candidates),
+                        index=0,
                         driver=driver.index,
                         trailer=trailer.index,
                         start=shift_start,
                         operations=tuple(operations),
                     )
-                    if not _is_shift_route_valid(instance, shift):
-                        continue
                     key = _shift_key(shift)
                     if key in seen:
                         continue
                     seen.add(key)
-                    candidates.append(shift)
+                    if not _is_shift_route_valid(instance, shift):
+                        continue
+                    candidates.append(replace(shift, index=len(candidates)))
 
     return candidates
 
@@ -360,15 +386,23 @@ def generate_carryover_rescue_candidates(
                 if route_time > max(window.end - window.start for window in driver.time_windows):
                     continue
 
-                for target_arrival in _arrival_samples(
-                    start_minute,
-                    latest_arrival,
-                    config.samples_per_customer,
-                    config.sample_lookback_days,
-                ):
-                    shift_start = target_arrival - instance.time_matrix[instance.base_index][customer_id]
-                    if shift_start < start_minute:
-                        continue
+                lead_time = instance.time_matrix[instance.base_index][customer_id]
+                trail_time = customer.setup_time + instance.time_matrix[customer_id][instance.base_index]
+                
+                target_arrivals = []
+                for window in driver.time_windows:
+                    min_arrival = max(start_minute + lead_time, window.start + lead_time)
+                    max_arrival = min(latest_arrival, window.end - trail_time)
+                    if min_arrival <= max_arrival:
+                        target_arrivals.append(min_arrival)
+                        target_arrivals.append(max_arrival)
+                        if max_arrival - min_arrival > 120:
+                            target_arrivals.append((min_arrival + max_arrival) // 2)
+                
+                target_arrivals = sorted(list(set(target_arrivals)))
+                
+                for target_arrival in target_arrivals:
+                    shift_start = target_arrival - lead_time
                     arrival = shift_start + instance.time_matrix[instance.base_index][customer_id]
                     departure = arrival + customer.setup_time
                     end = departure + instance.time_matrix[customer_id][instance.base_index]
@@ -405,12 +439,12 @@ def generate_carryover_rescue_candidates(
                         start=shift_start,
                         operations=(Operation(customer_id, arrival, quantity),),
                     )
-                    if not _is_shift_route_valid(instance, shift):
-                        continue
                     key = _shift_key(shift)
                     if key in seen:
                         continue
                     seen.add(key)
+                    if not _is_shift_route_valid(instance, shift):
+                        continue
                     candidates.append(replace(shift, index=len(candidates)))
 
     return candidates
@@ -479,15 +513,29 @@ def generate_chain_rescue_candidates(
                     + instance.time_matrix[source.index][anchor.index]
                 )
 
-                for anchor_arrival in _arrival_samples(
-                    start_minute,
-                    latest_anchor_arrival,
-                    config.samples_per_customer,
-                    config.sample_lookback_days,
-                ):
+                # Compute minimum trail time for chain
+                trail_time = anchor.setup_time
+                curr = anchor.index
+                for c_id in sequence[1:]:
+                    cust = instance.customer_by_point[c_id]
+                    trail_time += instance.time_matrix[curr][c_id] + cust.setup_time
+                    curr = c_id
+                trail_time += instance.time_matrix[curr][instance.base_index]
+                
+                target_arrivals = []
+                for window in driver.time_windows:
+                    min_arrival = max(start_minute + lead_to_anchor, window.start + lead_to_anchor)
+                    max_arrival = min(latest_anchor_arrival, window.end - trail_time)
+                    if min_arrival <= max_arrival:
+                        target_arrivals.append(min_arrival)
+                        target_arrivals.append(max_arrival)
+                        if max_arrival - min_arrival > 120:
+                            target_arrivals.append((min_arrival + max_arrival) // 2)
+                
+                target_arrivals = sorted(list(set(target_arrivals)))
+                
+                for anchor_arrival in target_arrivals:
                     shift_start = anchor_arrival - lead_to_anchor
-                    if shift_start < start_minute:
-                        continue
                     shift = _build_chain_shift(
                         instance,
                         baseline,
@@ -500,13 +548,10 @@ def generate_chain_rescue_candidates(
                         shift_start,
                         end_minute,
                         config,
+                        seen=seen,
                     )
                     if shift is None:
                         continue
-                    key = _shift_key(shift)
-                    if key in seen:
-                        continue
-                    seen.add(key)
                     candidates.append(replace(shift, index=len(candidates)))
 
     return candidates
@@ -572,15 +617,42 @@ def generate_multi_reload_candidates(
                     + source.setup_time
                     + instance.time_matrix[source.index][anchor.index]
                 )
-                for anchor_arrival in _arrival_samples(
-                    start_minute,
-                    latest_anchor_arrival,
-                    config.samples_per_customer,
-                    config.sample_lookback_days,
-                ):
+                
+                # Compute minimum trail time for multi-reload
+                trail_time = anchor.setup_time
+                curr = anchor.index
+                for c_id in first_segment[1:]:
+                    cust = instance.customer_by_point[c_id]
+                    trail_time += instance.time_matrix[curr][c_id] + cust.setup_time
+                    curr = c_id
+                
+                # Reload at source
+                trail_time += instance.time_matrix[curr][source.index] + source.setup_time
+                
+                # Second segment
+                curr = source.index
+                for c_id in second_segment:
+                    cust = instance.customer_by_point[c_id]
+                    trail_time += instance.time_matrix[curr][c_id] + cust.setup_time
+                    curr = c_id
+                
+                # Return to base
+                trail_time += instance.time_matrix[curr][instance.base_index]
+                
+                target_arrivals = []
+                for window in driver.time_windows:
+                    min_arrival = max(start_minute + lead_to_anchor, window.start + lead_to_anchor)
+                    max_arrival = min(latest_anchor_arrival, window.end - trail_time)
+                    if min_arrival <= max_arrival:
+                        target_arrivals.append(min_arrival)
+                        target_arrivals.append(max_arrival)
+                        if max_arrival - min_arrival > 120:
+                            target_arrivals.append((min_arrival + max_arrival) // 2)
+                
+                target_arrivals = sorted(list(set(target_arrivals)))
+                
+                for anchor_arrival in target_arrivals:
                     shift_start = anchor_arrival - lead_to_anchor
-                    if shift_start < start_minute:
-                        continue
                     shift = _build_multi_reload_shift(
                         instance,
                         baseline,
@@ -594,38 +666,37 @@ def generate_multi_reload_candidates(
                         shift_start,
                         end_minute,
                         config,
+                        seen=seen,
                     )
                     if shift is None:
                         continue
-                    key = _shift_key(shift)
-                    if key in seen:
-                        continue
-                    seen.add(key)
                     candidates.append(replace(shift, index=len(candidates)))
 
     # Generate pure reload shifts to allow pre-loading at base
-    for day in range(config.start_day, config.end_day):
-        day_start = day * 1440
-        for driver in instance.drivers:
-            for trailer in instance.trailers:
-                if trailer.index not in driver.trailer_ids:
+    for driver in instance.drivers:
+        for trailer in instance.trailers:
+            if trailer.index not in driver.trailer_ids:
+                continue
+            source = next(
+                (src for src in instance.sources if trailer.index in src.allowed_trailers),
+                None
+            )
+            if source is None:
+                continue
+            duration = (
+                instance.time_matrix[instance.base_index][source.index]
+                + source.setup_time
+                + instance.time_matrix[source.index][instance.base_index]
+            )
+            if duration > 720:
+                continue
+            for window in driver.time_windows:
+                if not (start_minute <= window.start < end_minute):
                     continue
-                source = next(
-                    (src for src in instance.sources if trailer.index in src.allowed_trailers),
-                    None
-                )
-                if source is None:
+                if window.end - window.start < duration:
                     continue
-                # Shift starts at day_start
-                shift_start = day_start
+                shift_start = window.start
                 source_arrival = shift_start + instance.time_matrix[instance.base_index][source.index]
-                duration = (
-                    instance.time_matrix[instance.base_index][source.index]
-                    + source.setup_time
-                    + instance.time_matrix[source.index][instance.base_index]
-                )
-                if duration > 720:
-                    continue
                 # Load max capacity
                 op = Operation(
                     point=source.index,
@@ -633,7 +704,7 @@ def generate_multi_reload_candidates(
                     quantity=-trailer.capacity
                 )
                 shift = Shift(
-                    index=len(candidates),
+                    index=0,
                     driver=driver.index,
                     trailer=trailer.index,
                     start=shift_start,
@@ -642,7 +713,7 @@ def generate_multi_reload_candidates(
                 key = _shift_key(shift)
                 if key not in seen:
                     seen.add(key)
-                    candidates.append(shift)
+                    candidates.append(replace(shift, index=len(candidates)))
 
     # Generate single-customer direct shifts starting from base (utilizing pre-loaded trailers)
     for c_id in failing_customers:
@@ -668,36 +739,39 @@ def generate_multi_reload_candidates(
                     continue
 
                 lead_to_anchor = instance.time_matrix[instance.base_index][c_id]
-                for anchor_arrival in _arrival_samples(
-                    start_minute,
-                    latest_anchor_arrival,
-                    config.samples_per_customer,
-                    config.sample_lookback_days,
-                ):
+                trail_time = customer.setup_time + instance.time_matrix[c_id][instance.base_index]
+                
+                target_arrivals = []
+                for window in driver.time_windows:
+                    min_arrival = max(start_minute + lead_to_anchor, window.start + lead_to_anchor)
+                    max_arrival = min(latest_anchor_arrival, window.end - trail_time)
+                    if min_arrival <= max_arrival:
+                        target_arrivals.append(min_arrival)
+                        target_arrivals.append(max_arrival)
+                        if max_arrival - min_arrival > 120:
+                            target_arrivals.append((min_arrival + max_arrival) // 2)
+                
+                target_arrivals = sorted(list(set(target_arrivals)))
+                
+                for anchor_arrival in target_arrivals:
                     shift_start = anchor_arrival - lead_to_anchor
-                    if shift_start < start_minute:
-                        continue
-                    duration = (
-                        lead_to_anchor
-                        + customer.setup_time
-                        + instance.time_matrix[c_id][instance.base_index]
-                    )
-                    if duration > 720:
-                        continue
-
+                    
                     # Construct shift
                     op = Operation(point=c_id, arrival=anchor_arrival, quantity=0.0)
                     shift = Shift(
-                        index=len(candidates),
+                        index=0,
                         driver=driver.index,
                         trailer=trailer.index,
                         start=shift_start,
                         operations=(op,)
                     )
                     key = _shift_key(shift)
-                    if key not in seen:
-                        seen.add(key)
-                        candidates.append(shift)
+                    if key in seen:
+                        continue
+                    seen.add(key)
+                    if not _is_shift_route_valid(instance, shift):
+                        continue
+                    candidates.append(replace(shift, index=len(candidates)))
 
     return candidates
 
@@ -749,6 +823,7 @@ def _build_multi_reload_shift(
     shift_start: int,
     end_minute: int,
     config: RescueConfig,
+    seen: set[tuple[object, ...]] | None = None,
 ) -> Shift | None:
     trailer = instance.trailers[trailer_id]
     source = instance.source_by_point[source_id]
@@ -817,9 +892,14 @@ def _build_multi_reload_shift(
         start=shift_start,
         operations=tuple(operations),
     )
+    if seen is not None:
+        key = _shift_key(shift)
+        if key in seen:
+            return None
+        seen.add(key)
     if not _is_shift_route_valid(instance, shift):
         return None
-    if derive_solution(instance, Solution(shifts=(shift,)))[0].end > end_minute:
+    if _derive_single_shift(instance, shift).end > end_minute:
         return None
     return shift
 
@@ -935,6 +1015,7 @@ def _build_chain_shift(
     shift_start: int,
     end_minute: int,
     config: RescueConfig,
+    seen: set[tuple[object, ...]] | None = None,
 ) -> Shift | None:
     driver = instance.drivers[driver_id]
     trailer = instance.trailers[trailer_id]
@@ -1013,6 +1094,11 @@ def _build_chain_shift(
         start=shift_start,
         operations=tuple(operations),
     )
+    if seen is not None:
+        key = _shift_key(shift)
+        if key in seen:
+            return None
+        seen.add(key)
     if not _is_shift_route_valid(instance, shift):
         return None
     return shift
@@ -1127,8 +1213,9 @@ def _trailer_load_cache(instance: Instance, solution: Solution) -> dict[int, lis
     return cache
 
 
+@lru_cache(maxsize=100000)
 def _is_shift_route_valid(instance: Instance, shift: Shift) -> bool:
-    derived = derive_solution(instance, Solution(shifts=(shift,)))[0]
+    derived = _derive_single_shift(instance, shift)
     driver = instance.drivers[shift.driver]
     has_layover_customer = any(
         operation.point in instance.customer_by_point

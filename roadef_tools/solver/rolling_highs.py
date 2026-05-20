@@ -7,6 +7,8 @@ from ..contest import ContestScore, score_prefix_with_feasibility_tail
 from ..model import Instance, Shift, Solution
 from .candidate_gen import GeneratorConfig, generate_shift_candidates
 from .highs_selector import select_shifts_with_highs
+from ..highs_repair import repair_quantities_with_highs
+from ..highs_time_opt import optimize_solution_times
 
 
 MINUTES_PER_DAY = 1440
@@ -22,6 +24,7 @@ class RollingHighsConfig:
     neighborhood_size: int = 15
     feasibility_tail_days: int = 1
     candidate_source: str = "generated"
+    variable_quantities: bool = True
 
 
 @dataclass(frozen=True)
@@ -73,8 +76,9 @@ def rolling_highs_select(
     steps: list[RollingHighsStep] = []
     day = config.start_day
 
+    instance_horizon_days = (instance.horizon * instance.unit) // MINUTES_PER_DAY
     while day < config.end_day:
-        window_end_day = min(day + config.lookahead_days, config.end_day)
+        window_end_day = min(day + config.lookahead_days, instance_horizon_days)
         commit_end_day = min(day + config.commit_days, config.end_day)
         emit(
             f"rolling_step,day={day},window_end_day={window_end_day},"
@@ -117,6 +121,15 @@ def rolling_highs_select(
             candidates,
             start_day=day,
             end_day=window_end_day,
+            variable_quantities=config.variable_quantities,
+        )
+        selected = optimize_solution_times(instance, selected)
+        selected, _ = repair_quantities_with_highs(
+            instance,
+            selected,
+            score_days=window_end_day,
+            feasibility_days=window_end_day,
+            fixed_prefix_minutes=day * MINUTES_PER_DAY,
         )
 
         previous_shift_count = len(accepted.shifts)
@@ -150,10 +163,19 @@ def rolling_highs_select(
                     commit_candidates,
                     start_day=day,
                     end_day=fallback_end_day,
+                    variable_quantities=config.variable_quantities,
+                )
+                commit_selected = optimize_solution_times(instance, commit_selected)
+                commit_repaired, _ = repair_quantities_with_highs(
+                    instance,
+                    commit_selected,
+                    score_days=fallback_end_day,
+                    feasibility_days=fallback_end_day,
+                    fixed_prefix_minutes=day * MINUTES_PER_DAY,
                 )
                 commit_solution = _reindex_solution(
                     _keep_shifts_started_before(
-                        commit_selected, commit_end_day * MINUTES_PER_DAY
+                        commit_repaired, commit_end_day * MINUTES_PER_DAY
                     )
                 )
                 commit_score = _score_commit_tail(
@@ -266,7 +288,8 @@ def _score_commit_tail(
     commit_end_day: int,
     config: RollingHighsConfig,
 ) -> ContestScore | None:
-    feasibility_days = min(config.end_day, commit_end_day + config.feasibility_tail_days)
+    instance_horizon_days = (instance.horizon * instance.unit) // MINUTES_PER_DAY
+    feasibility_days = min(instance_horizon_days, commit_end_day + config.feasibility_tail_days)
     if commit_end_day <= 0 or feasibility_days < commit_end_day:
         return None
     return score_prefix_with_feasibility_tail(

@@ -465,13 +465,9 @@ def _add_inventory_constraints_with_slacks(
             
             highs.addRow(rhs_lower, inf, len(indices), np.array(indices, dtype=np.int32), np.array(qtys, dtype=np.float64))
 
-            # Overfill slack (1B penalty) - Physical impossibility, must be avoided at all costs.
-            highs.addCol(1_000_000_000.0, 0.0, inf, 0, np.array([], dtype=np.int32), np.array([], dtype=np.float64))
-            slack_overfill_idx = highs.getNumCol() - 1
-            
-            indices_u = [q_indices[variable_index] for variable_index in relevant] + [slack_overfill_idx]
-            qtys_u = [1.0] * len(relevant) + [-1.0]
-            
+            # Overfill constraint (HARD) - Physical impossibility, must be avoided at all costs.
+            indices_u = [q_indices[variable_index] for variable_index in relevant]
+            qtys_u = [1.0] * len(relevant)
             highs.addRow(-inf, rhs_upper, len(indices_u), np.array(indices_u, dtype=np.int32), np.array(qtys_u, dtype=np.float64))
 
 
@@ -541,10 +537,9 @@ def _add_fixed_inventory_constraints_with_slacks(
             qtys = [relevant_shifts[shift_index] for shift_index in relevant_shifts] + [1.0]
             highs.addRow(rhs_lower, inf, len(indices), np.array(indices, dtype=np.int32), np.array(qtys, dtype=np.float64))
 
-            highs.addCol(1_000_000_000.0, 0.0, inf, 0, np.array([], dtype=np.int32), np.array([], dtype=np.float64))
-            slack_overfill_idx = highs.getNumCol() - 1
-            indices_u = [x_indices[shift_index] for shift_index in relevant_shifts] + [slack_overfill_idx]
-            qtys_u = [relevant_shifts[shift_index] for shift_index in relevant_shifts] + [-1.0]
+            # Overfill constraint (HARD)
+            indices_u = [x_indices[shift_index] for shift_index in relevant_shifts]
+            qtys_u = [relevant_shifts[shift_index] for shift_index in relevant_shifts]
             highs.addRow(-inf, rhs_upper, len(indices_u), np.array(indices_u, dtype=np.int32), np.array(qtys_u, dtype=np.float64))
 
 
@@ -824,8 +819,13 @@ def _add_trailer_ending_inventory_constraints(
         highs.addCol(50_000.0, 0.0, inf, 0, np.array([], dtype=np.int32), np.array([], dtype=np.float64))
         slack_down_idx = highs.getNumCol() - 1
 
-        row_indices = indices + [slack_up_idx, slack_down_idx]
-        row_coeffs = coefficients + [1.0, -1.0]
+        # Sum coefficients for duplicate indices to avoid HiGHS duplicate index error
+        combined = {}
+        for idx_val, coeff_val in zip(indices, coefficients):
+            combined[idx_val] = combined.get(idx_val, 0.0) + coeff_val
+
+        row_indices = list(combined.keys()) + [slack_up_idx, slack_down_idx]
+        row_coeffs = list(combined.values()) + [1.0, -1.0]
 
         highs.addRow(
             target,
@@ -834,3 +834,4 @@ def _add_trailer_ending_inventory_constraints(
             np.array(row_indices, dtype=np.int32),
             np.array(row_coeffs, dtype=np.float64),
         )
+

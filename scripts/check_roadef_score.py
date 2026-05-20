@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parent
+ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = ROOT / "roadef_2016_data"
 PUBLISHED_RATIOS = DATA_DIR / "published_best_ratios.csv"
 CHECKER_EXE = (
