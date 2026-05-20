@@ -17,6 +17,7 @@ from roadef_tools.solver.calibration import (
     forecast_calibration_report,
 )
 from roadef_tools.solver.history import load_realized_consumption_history
+from roadef_tools.solver.history import realized_history_from_solution_week
 from roadef_tools.solver.policy_sweep import ManualCsvSweepAdapter, load_policy_sweep_csv
 from roadef_tools.solver.route_priors import route_priors_from_solution
 from roadef_tools.solver.scenario import ForecastDistribution
@@ -148,12 +149,29 @@ def test_route_prior_candidate_is_marked_and_not_forced() -> None:
     assert priors[0].shift.operations[0].point == 2
 
 
+def test_solution_history_extract_uses_instance_consumption_and_delivery_context() -> None:
+    instance = tiny_instance(forecast=(10.0, 20.0, 30.0))
+    solution = Solution(
+        shifts=(Shift(0, 0, 0, 0, (Operation(2, 1440, 5.0),)),)
+    )
+
+    rows = realized_history_from_solution_week(instance, solution, history_days=2)
+
+    assert [row.realized_consumption for row in rows] == [10.0, 20.0]
+    assert rows[0].delivered_quantity is None
+    assert rows[1].delivered_quantity == 5.0
+    assert rows[1].source == "solution_week_instance_consumption"
+
+
 def test_new_cli_commands_parse() -> None:
     parser = build_parser()
 
     history = parser.parse_args(["consumption-history-check", "history.csv", "--output-csv", "out.csv"])
     calibration = parser.parse_args(
         ["forecast-calibration", "i.xml", "forecast.csv", "realized.csv", "--output-csv", "cal.csv"]
+    )
+    solution_history = parser.parse_args(
+        ["solution-history-extract", "i.xml", "s.xml", "history.csv", "--history-days", "7"]
     )
     sweep = parser.parse_args(
         [
@@ -171,6 +189,7 @@ def test_new_cli_commands_parse() -> None:
     )
 
     assert history.command == "consumption-history-check"
+    assert solution_history.command == "solution-history-extract"
     assert calibration.command == "forecast-calibration"
     assert sweep.command == "robust-policy-sweep"
 

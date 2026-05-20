@@ -9,6 +9,10 @@ from typing import Any
 
 import numpy as np
 
+from ..model import Instance, Solution
+
+MINUTES_PER_DAY = 1440
+
 
 @dataclass(frozen=True)
 class RealizedConsumptionRow:
@@ -56,6 +60,38 @@ def write_realized_consumption_csv(rows: tuple[RealizedConsumptionRow, ...], pat
             writer.writerow(row.flat())
 
 
+def realized_history_from_solution_week(
+    instance: Instance,
+    solution: Solution,
+    *,
+    history_days: int = 7,
+) -> tuple[RealizedConsumptionRow, ...]:
+    """Use an instance's first-week consumption path as realized history.
+
+    The solution contributes optional delivered-quantity context only.  It is
+    not used to infer required route frequency or consumption labels.
+    """
+    max_step = min(instance.horizon, max(0, history_days) * MINUTES_PER_DAY // instance.unit)
+    delivered = _delivered_by_customer_step(instance, solution, max_step)
+    rows: list[RealizedConsumptionRow] = []
+    for customer in instance.customers:
+        if customer.call_in:
+            continue
+        for step in range(max_step):
+            rows.append(
+                RealizedConsumptionRow(
+                    customer_id=customer.index,
+                    timestamp=None,
+                    step=step,
+                    realized_consumption=max(0.0, customer.forecast[step]),
+                    inventory_observed=None,
+                    delivered_quantity=delivered.get((customer.index, step)),
+                    source="solution_week_instance_consumption",
+                )
+            )
+    return tuple(rows)
+
+
 def _read_rows(path: Path) -> list[dict[str, Any]]:
     suffix = path.suffix.lower()
     if suffix == ".csv":
@@ -72,6 +108,24 @@ def _read_rows(path: Path) -> list[dict[str, Any]]:
         with path.open() as handle:
             return [json.loads(line) for line in handle if line.strip()]
     raise ValueError(f"Unsupported history input format: {path.suffix}")
+
+
+def _delivered_by_customer_step(
+    instance: Instance,
+    solution: Solution,
+    max_step: int,
+) -> dict[tuple[int, int], float]:
+    delivered: dict[tuple[int, int], float] = {}
+    customer_ids = {customer.index for customer in instance.customers if not customer.call_in}
+    for shift in solution.shifts:
+        for operation in shift.operations:
+            if operation.point not in customer_ids or operation.quantity <= 0.0:
+                continue
+            step = operation.arrival // instance.unit
+            if 0 <= step < max_step:
+                key = (operation.point, step)
+                delivered[key] = delivered.get(key, 0.0) + operation.quantity
+    return delivered
 
 
 def _normalize_row(row: dict[str, Any], csv_line: int) -> RealizedConsumptionRow:

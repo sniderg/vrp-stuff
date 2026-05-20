@@ -105,6 +105,7 @@ from .solver.calibration import (
 )
 from .solver.history import (
     load_realized_consumption_history,
+    realized_history_from_solution_week,
     write_realized_consumption_csv,
 )
 from .solver.backtest import (
@@ -561,6 +562,22 @@ def cmd_consumption_history_check(args: argparse.Namespace) -> int:
         print(f"wrote,{args.output_csv}")
     print(f"rows,{len(rows)}")
     print(f"customers,{len({row.customer_id for row in rows})}")
+    return 0
+
+
+def cmd_solution_history_extract(args: argparse.Namespace) -> int:
+    instance = load_instance(args.instance_xml)
+    solution = load_solution(args.solution_xml)
+    rows = realized_history_from_solution_week(
+        instance,
+        solution,
+        history_days=args.history_days,
+    )
+    write_realized_consumption_csv(rows, args.output_csv)
+    print(f"wrote,{args.output_csv}")
+    print(f"rows,{len(rows)}")
+    print(f"customers,{len({row.customer_id for row in rows})}")
+    print("source,solution_week_instance_consumption")
     return 0
 
 
@@ -1820,6 +1837,13 @@ def build_parser() -> argparse.ArgumentParser:
     history_check.add_argument("history_csv", type=Path)
     history_check.add_argument("--output-csv", type=Path)
     history_check.set_defaults(func=cmd_consumption_history_check)
+
+    solution_history = subparsers.add_parser("solution-history-extract")
+    solution_history.add_argument("instance_xml", type=Path)
+    solution_history.add_argument("solution_xml", type=Path)
+    solution_history.add_argument("output_csv", type=Path)
+    solution_history.add_argument("--history-days", type=int, default=7)
+    solution_history.set_defaults(func=cmd_solution_history_extract)
 
     forecast_calibration = subparsers.add_parser("forecast-calibration")
     forecast_calibration.add_argument("instance_xml", type=Path)
