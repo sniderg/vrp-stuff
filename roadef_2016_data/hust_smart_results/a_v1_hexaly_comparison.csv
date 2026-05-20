@@ -1,7 +1,12 @@
-instance,solution,official_ratio,hexaly,gap_vs_hexaly_pct,baseline_ratio,improvement_pct,cost,delivered,shifts
-V_1.1,v1_1.1_cached_expand3_pruned_maxfill.xml,0.031523,0.027485,14.691649990904132,0.034243,7.9432292731361205,27981.0,887626.0,50
-V_1.3,v1_1.3_cached_improved.xml,0.036594,0.013505,170.966308774528,0.037398,2.149847585432374,1449.797771652706,52499.375911468174,4
-V_1.4,v1_1.4_cached_improved.xml,0.038188,0.015464,146.94774961200204,0.03852,0.8618899273104885,3707.6004077923467,128802.39368925474,11
-V_1.5,v1_1.5_cached_improved.xml,0.018545,0.011841,56.6168397939363,0.01883,1.5135422198619297,910.62,146839.2384553253,7
-V_1.8,v1_1.8_cached_improved.xml,0.015479,0.007756,99.57452294997422,0.015808,2.0812246963562764,265.5933333333333,56391.60646910325,3
-V_1.10,v1_1.10_cached_improved.xml,0.041155,0.018371,124.02155571280824,0.041741,1.4038954505162904,1739.1466666666665,122749.79497921297,14
+instance,solution,official_v1_ratio,hexaly_v1_ratio,gap_vs_hexaly_pct,status,notes
+V_1.1,v1_1.1_cached_expand3_pruned_maxfill.xml,0.031523,0.027485,14.7,worse,"TimeCost is zero, so this is a direct route-quality gap under V1."
+V_1.2,v1_1.2_improved.xml,0.029765,0.027477,8.3,worse,"TimeCost is zero, so this is a direct route-quality gap under V1."
+V_1.3,v1_1.3_improved_squeezed.xml,0.036594,0.013505,171.0,worse,"Nonzero TimeCost; our solver was not tuned for the historical V1 weighting."
+V_1.4,v1_1.4_official_greedy.xml,0.038107,0.015464,146.4,worse,"V1-only official-gated source-visit cleanup improved the prior 0.038188 result."
+V_1.5,v1_1.5_improved_squeezed.xml,0.018545,0.011841,56.6,worse,"Nonzero TimeCost; route shape remains weaker than Hexaly under V1."
+V_1.6,v1_1.6_improved_squeezed.xml,0.023762,0.012880,84.5,worse,"Long horizon and nonzero TimeCost; feasible but not V1-competitive."
+V_1.7,v1_1.7_improved_squeezed.xml,0.052122,0.012621,313.0,worse,"Largest gap; V1 weights heavily expose long-duration route choices."
+V_1.8,v1_1.8_improved_squeezed.xml,0.015479,0.007756,99.6,worse,"Short horizon, nonzero TimeCost; feasible but not V1-competitive."
+V_1.9,v1_1.9_rescued_feasible.xml,0.026426,0.015815,67.1,worse,"New fully feasible repair; preferred over earlier infeasible V_1.9 rescued outputs."
+V_1.10,v1_1.10_official_greedy.xml,0.040454,0.018371,120.2,worse,"V1-only official-gated source-visit cleanup improved the prior 0.041155 result."
+V_1.11,v1_1.11_rescued.xml,0.061461,0.028957,112.2,worse,"Fully feasible rescued solution; do not claim the earlier V1/V2-divided value."
