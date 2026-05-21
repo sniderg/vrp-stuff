@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+import hashlib
+import pickle
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, replace
+from pathlib import Path
 
 from ..contest import score_prefix_with_feasibility_tail
 from ..inventory import tank_events
@@ -15,6 +18,8 @@ from .highs_selector import (
     _inventory_pressure_by_customer,
     select_shifts_with_highs,
 )
+from .pressure import pressure_points
+from .route_priors import RoutePriorDiagnostics, route_signature
 from .targeted_rescue import (
     MINUTES_PER_DAY,
     RescueConfig,
@@ -53,11 +58,20 @@ class ColumnLoopConfig:
     commit_end_day: int = 7
     next_after_commit_day: int | None = None
     route_prior_candidates: tuple[Shift, ...] = ()
+    route_prior_sources: tuple[str, ...] = ()
     selector_time_limit: float = 300.0
     selector_mip_gap: float | None = None
     selector_threads: int | None = None
     selector_mip_focus: int | None = None
     selector_node_limit: int | None = None
+    selector_phase: str = "auto"
+    candidate_cache_dir: str | None = None
+    bucket_anchor_cap: int = 80
+    bucket_resource_time_cap: int = 12
+    bucket_route_signature_cap: int = 1
+    bucket_source_region_cap: int = 240
+    protect_exact_prior_quantities: bool = False
+    use_prior_incumbent: bool = True
 
 
 @dataclass(frozen=True)
@@ -79,6 +93,14 @@ class ColumnLoopStep:
     next_after_commit_day: int | None = None
     min_next_after_commit_doi: float = 999.0
     vulnerable_next_after_commit_customers: list[tuple[int, float]] = None
+    prior_loaded: int = 0
+    prior_structurally_valid: int = 0
+    prior_inserted: int = 0
+    prior_selected: int = 0
+    prior_rejected: int = 0
+    prior_skeletons_regenerated: int = 0
+    prior_rejected_pressure_cover: int = 0
+    prior_rejected_route_summary: str = ""
 
 
 def get_vulnerabilities(
@@ -123,25 +145,45 @@ def column_generation_rescue(
         baseline,
         config.replace_from_day * MINUTES_PER_DAY,
     )
-    pool = _dedupe_reindex(
-        [
-            *_baseline_window_shifts(baseline, _rescue_config(config)),
-            *config.route_prior_candidates,
-        ]
-    )
+    baseline_window = list(_baseline_window_shifts(baseline, _rescue_config(config)))
+    raw_pool = [*baseline_window, *config.route_prior_candidates]
+    pool = _dedupe_reindex(raw_pool)
+    prior_diagnostics = _prior_diagnostics(instance, config, pool, ())
     steps: list[ColumnLoopStep] = []
-    best_solution = baseline
-    best_score = score_prefix_with_feasibility_tail(
+    baseline_score = score_prefix_with_feasibility_tail(
         instance,
         baseline,
         score_days=config.end_day,
         feasibility_days=config.end_day,
     )
+    prior_incumbent = _prior_incumbent_solution(instance, fixed_prefix, config)
+    prior_incumbent_score = (
+        score_prefix_with_feasibility_tail(
+            instance,
+            prior_incumbent,
+            score_days=config.end_day,
+            feasibility_days=config.end_day,
+        )
+        if prior_incumbent is not None
+        else None
+    )
+    if (
+        config.use_prior_incumbent
+        and prior_incumbent is not None
+        and prior_incumbent_score is not None
+        and _score_key(prior_incumbent_score) <= _score_key(baseline_score)
+    ):
+        best_solution = prior_incumbent
+        best_score = prior_incumbent_score
+    else:
+        best_solution = baseline
+        best_score = baseline_score
 
-    current = baseline
+    current = best_solution
+    current_score = best_score
     for iteration in range(config.iterations):
         pressure_customers = _pressure_customers(instance, current, config)
-        generated = _generate_priced_batches(
+        generated = _cached_generate_priced_batches(
             instance,
             fixed_prefix,
             pressure_customers,
@@ -177,27 +219,56 @@ def column_generation_rescue(
                 threads=config.selector_threads,
                 mip_focus=config.selector_mip_focus,
                 node_limit=config.selector_node_limit,
+                selector_phase=_selector_phase_for_iteration(config, best_score),
+                mip_start_shift_indices=_mip_start_indices(
+                    instance,
+                    pool,
+                    baseline_window,
+                    config.route_prior_candidates,
+                ),
+                priority_shift_indices=_priority_prior_indices(
+                    instance,
+                    pool,
+                    config.route_prior_candidates,
+                    pressure_customers,
+                ),
             ),
         )
         selected = optimize_solution_times(instance, selected)
         if config.normalize_source_loads:
             selected = normalize_source_loads(instance, selected)
+        selected_score = score_prefix_with_feasibility_tail(
+            instance,
+            selected,
+            score_days=config.end_day,
+            feasibility_days=config.end_day,
+        )
         repaired, repair_report = repair_quantities_with_highs(
             instance,
             selected,
             score_days=config.end_day,
             feasibility_days=config.end_day,
             quantity_objective=config.quantity_objective,
+            fixed_shift_indices=(
+                _fixed_prior_shift_indices(instance, selected, _exact_route_priors(config))
+                if config.protect_exact_prior_quantities
+                else None
+            ),
         )
         if config.normalize_source_loads:
             repaired = normalize_source_loads(instance, repaired)
-        current = repaired
-        score = score_prefix_with_feasibility_tail(
+        repaired_score = score_prefix_with_feasibility_tail(
             instance,
-            current,
+            repaired,
             score_days=config.end_day,
             feasibility_days=config.end_day,
         )
+        candidate = repaired if _score_key(repaired_score) <= _score_key(selected_score) else selected
+        candidate_score = repaired_score if candidate is repaired else selected_score
+        if _score_key(candidate_score) <= _score_key(current_score):
+            current = candidate
+            current_score = candidate_score
+        score = current_score
         if _score_key(score) < _score_key(best_score):
             best_score = score
             best_solution = current
@@ -211,6 +282,7 @@ def column_generation_rescue(
         )
         min_next_doi, vuln_next = get_vulnerabilities(instance, current, next_after_commit_day)
         min_lookahead_doi, vuln_lookahead = get_vulnerabilities(instance, current, config.end_day)
+        prior_diagnostics = _prior_diagnostics(instance, config, pool, selected.shifts)
 
         steps.append(
             ColumnLoopStep(
@@ -231,6 +303,14 @@ def column_generation_rescue(
                 vulnerable_next_after_commit_customers=vuln_next,
                 min_lookahead_doi=min_lookahead_doi,
                 vulnerable_lookahead_customers=vuln_lookahead,
+                prior_loaded=prior_diagnostics.loaded,
+                prior_structurally_valid=prior_diagnostics.structurally_valid,
+                prior_inserted=prior_diagnostics.inserted,
+                prior_selected=prior_diagnostics.selected,
+                prior_rejected=prior_diagnostics.rejected,
+                prior_skeletons_regenerated=prior_diagnostics.skeletons_regenerated,
+                prior_rejected_pressure_cover=prior_diagnostics.rejected_pressure_cover,
+                prior_rejected_route_summary=prior_diagnostics.rejected_route_summary,
             )
         )
         if score.feasible:
@@ -266,6 +346,9 @@ def _pressure_customers(
     solution: Solution,
     config: ColumnLoopConfig,
 ) -> list[int]:
+    ranked = pressure_points(instance, solution, end_day=config.end_day)
+    if ranked:
+        return [point.customer for point in ranked[: config.max_pressure_customers]]
     cutoff_step = min(instance.horizon, config.end_day * MINUTES_PER_DAY // instance.unit)
     breach_scores: dict[int, tuple[int, float]] = {}
     urgency_scores: dict[int, tuple[int, float]] = {}
@@ -334,6 +417,27 @@ def _generate_priced_batches(
     return [candidate for batch in nested for candidate in batch]
 
 
+def _cached_generate_priced_batches(
+    instance: Instance,
+    prefix: Solution,
+    pressure_customers: list[int],
+    config: ColumnLoopConfig,
+) -> list[Shift]:
+    if config.candidate_cache_dir is None:
+        return _generate_priced_batches(instance, prefix, pressure_customers, config)
+    cache_dir = Path(config.candidate_cache_dir)
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    key = _candidate_cache_key(instance, prefix, pressure_customers, config)
+    cache_path = cache_dir / f"{key}.pkl"
+    if cache_path.exists():
+        with cache_path.open("rb") as handle:
+            return pickle.load(handle)
+    candidates = _generate_priced_batches(instance, prefix, pressure_customers, config)
+    with cache_path.open("wb") as handle:
+        pickle.dump(candidates, handle)
+    return candidates
+
+
 def _anchor_batch(
     instance: Instance,
     pressure_customers: list[int],
@@ -365,18 +469,33 @@ def _top_diverse_columns(
     selected: list[Shift] = []
     seen_routes: set[tuple[int, ...]] = set()
     bucket_counts: dict[tuple[int, int, int], int] = {}
+    anchor_counts: dict[int, int] = {}
+    route_signature_counts: dict[tuple[int, ...], int] = {}
+    source_region_counts: dict[int, int] = {}
     for shift in ranked:
         customers = _served_customers(instance, shift)
         if not customers:
             continue
         route_key = (tuple(customers), shift.start // 240, shift.driver, shift.trailer)
-        if route_key in seen_routes:
+        if route_key in seen_routes and config.bucket_route_signature_cap <= 1:
             continue
         bucket = (shift.driver, shift.trailer, shift.start // 240)
-        if bucket_counts.get(bucket, 0) >= 12:
+        anchor = customers[0]
+        source_region = _first_source_region(instance, shift)
+        route_signature_counts[tuple(customers)] = route_signature_counts.get(tuple(customers), 0)
+        if bucket_counts.get(bucket, 0) >= config.bucket_resource_time_cap:
+            continue
+        if anchor_counts.get(anchor, 0) >= config.bucket_anchor_cap:
+            continue
+        if route_signature_counts.get(tuple(customers), 0) >= config.bucket_route_signature_cap:
+            continue
+        if source_region_counts.get(source_region, 0) >= config.bucket_source_region_cap:
             continue
         seen_routes.add(route_key)
         bucket_counts[bucket] = bucket_counts.get(bucket, 0) + 1
+        anchor_counts[anchor] = anchor_counts.get(anchor, 0) + 1
+        route_signature_counts[tuple(customers)] += 1
+        source_region_counts[source_region] = source_region_counts.get(source_region, 0) + 1
         selected.append(shift)
         if len(selected) >= config.max_candidates_per_iteration:
             break
@@ -398,3 +517,204 @@ def _score_key(score) -> tuple[int, int, int, float]:
         score.feasibility_errors,
         score.safety_kg_min,
     )
+
+
+def _selector_phase_for_iteration(config: ColumnLoopConfig, best_score) -> str:
+    if config.selector_phase != "auto":
+        return config.selector_phase
+    return "cost" if best_score.feasible else "feasibility"
+
+
+def _prior_diagnostics(
+    instance: Instance,
+    config: ColumnLoopConfig,
+    pool: list[Shift] | tuple[Shift, ...],
+    selected: tuple[Shift, ...],
+) -> RoutePriorDiagnostics:
+    prior_by_signature = {
+        _prior_match_signature(instance, shift): shift
+        for shift in config.route_prior_candidates
+    }
+    prior_signatures = set(prior_by_signature)
+    pool_signatures = {_prior_match_signature(instance, shift) for shift in pool}
+    selected_signatures = {_prior_match_signature(instance, shift) for shift in selected}
+    inserted_signatures = prior_signatures & pool_signatures
+    inserted = len(inserted_signatures)
+    selected_count = len(inserted_signatures & selected_signatures)
+    rejected_signatures = sorted(
+        inserted_signatures - selected_signatures,
+        key=lambda signature: (signature[0], signature[1], signature[2], signature[3]),
+    )
+    pressure_customers = set(_pressure_customers(instance, Solution(shifts=selected), config))
+    rejected_pressure_cover = 0
+    rejected_parts = []
+    for signature in rejected_signatures:
+        shift = prior_by_signature[signature]
+        customers = _served_customers(instance, shift)
+        overlap = tuple(customer for customer in customers if customer in pressure_customers)
+        if overlap:
+            rejected_pressure_cover += 1
+        rejected_parts.append(
+            "d{}-t{}-b{}:{}{}".format(
+                shift.driver,
+                shift.trailer,
+                shift.start // 240,
+                "/".join(str(customer) for customer in customers[:5]),
+                f"*{','.join(str(customer) for customer in overlap[:3])}" if overlap else "",
+            )
+        )
+    return RoutePriorDiagnostics(
+        loaded=len(config.route_prior_candidates),
+        structurally_valid=len(config.route_prior_candidates),
+        inserted=inserted,
+        selected=selected_count,
+        rejected=max(0, inserted - selected_count),
+        skeletons_regenerated=sum(1 for source in config.route_prior_sources if source == "historical_prior_skeleton"),
+        rejected_pressure_cover=rejected_pressure_cover,
+        rejected_route_summary=";".join(rejected_parts[:12]),
+    )
+
+
+def _mip_start_indices(
+    instance: Instance,
+    pool: list[Shift],
+    baseline_window: list[Shift],
+    priors: tuple[Shift, ...],
+) -> tuple[int, ...]:
+    warm_signatures = {
+        route_signature(instance, shift)
+        for shift in [*baseline_window, *priors]
+    }
+    return tuple(
+        index
+        for index, shift in enumerate(pool)
+        if route_signature(instance, shift) in warm_signatures
+    )
+
+
+def _prior_match_signature(instance: Instance, shift: Shift) -> tuple[int, int, tuple[int, ...], tuple[int, ...]]:
+    return (
+        shift.driver,
+        shift.trailer,
+        tuple(operation.point for operation in shift.operations),
+        _served_customers(instance, shift),
+    )
+
+
+def _priority_prior_indices(
+    instance: Instance,
+    pool: list[Shift],
+    priors: tuple[Shift, ...],
+    pressure_customers: list[int],
+) -> tuple[int, ...]:
+    pressure_set = set(pressure_customers)
+    if not pressure_set:
+        return ()
+    priority_signatures = {
+        route_signature(instance, shift)
+        for shift in priors
+        if pressure_set.intersection(_served_customers(instance, shift))
+    }
+    return tuple(
+        index
+        for index, shift in enumerate(pool)
+        if route_signature(instance, shift) in priority_signatures
+    )
+
+
+def _fixed_prior_shift_indices(
+    instance: Instance,
+    solution: Solution,
+    priors: tuple[Shift, ...],
+) -> set[int]:
+    prior_signatures = {
+        _prior_match_signature(instance, shift)
+        for shift in priors
+    }
+    return {
+        shift.index
+        for shift in solution.shifts
+        if _prior_match_signature(instance, shift) in prior_signatures
+    }
+
+
+def _prior_incumbent_solution(
+    instance: Instance,
+    fixed_prefix: Solution,
+    config: ColumnLoopConfig,
+) -> Solution | None:
+    exact_priors = _exact_route_priors(config)
+    if not exact_priors:
+        return None
+    start = config.replace_from_day * MINUTES_PER_DAY
+    end = config.end_day * MINUTES_PER_DAY
+    window_priors = [
+        shift
+        for shift in exact_priors
+        if start <= shift.start < end
+    ]
+    if not window_priors:
+        return None
+    return Solution(
+        shifts=tuple(
+            replace(shift, index=index)
+            for index, shift in enumerate(
+                sorted(
+                    [*fixed_prefix.shifts, *window_priors],
+                    key=lambda shift: (shift.start, shift.driver, shift.trailer),
+                )
+            )
+        )
+    )
+
+
+def _exact_route_priors(config: ColumnLoopConfig) -> tuple[Shift, ...]:
+    if not config.route_prior_sources:
+        return config.route_prior_candidates
+    return tuple(
+        shift
+        for shift, source in zip(config.route_prior_candidates, config.route_prior_sources)
+        if source == "historical_prior"
+    )
+
+
+def _candidate_cache_key(
+    instance: Instance,
+    prefix: Solution,
+    pressure_customers: list[int],
+    config: ColumnLoopConfig,
+) -> str:
+    digest = hashlib.sha256()
+    digest.update(str(instance.name).encode())
+    digest.update(repr(tuple((s.driver, s.trailer, s.start, tuple((op.point, op.arrival, round(op.quantity, 3)) for op in s.operations)) for s in prefix.shifts)).encode())
+    digest.update(repr(tuple(pressure_customers)).encode())
+    digest.update(
+        repr(
+            (
+                config.start_day,
+                config.end_day,
+                config.replace_from_day,
+                config.samples_per_customer,
+                config.sample_lookback_days,
+                config.max_chain_length,
+                config.nearest_chain_neighbors,
+                config.target_fill_ratio,
+                config.max_pre_service_fill_ratio,
+                config.multi_reload_columns,
+                config.max_multi_reload_per_batch,
+            )
+        ).encode()
+    )
+    for customer in instance.customers:
+        digest.update(repr((customer.index, customer.forecast[: config.end_day * 24])).encode())
+    return digest.hexdigest()[:24]
+
+
+def _first_source_region(instance: Instance, shift: Shift) -> int:
+    for operation in shift.operations:
+        if operation.point in instance.source_by_point:
+            return operation.point
+    if not _served_customers(instance, shift):
+        return -1
+    first_customer = _served_customers(instance, shift)[0]
+    return min(instance.sources, key=lambda source: instance.time_matrix[source.index][first_customer]).index if instance.sources else -1

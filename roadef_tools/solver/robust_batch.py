@@ -36,6 +36,12 @@ class RobustBatchResult:
     rounds: int
     scenario_failures: int
     max_retry_count: int
+    prior_loaded: int = 0
+    prior_inserted: int = 0
+    prior_selected: int = 0
+    prior_rejected: int = 0
+    prior_skeletons_regenerated: int = 0
+    prior_rejected_pressure_cover: int = 0
 
     @classmethod
     def from_score(
@@ -60,6 +66,12 @@ class RobustBatchResult:
             rounds=len(step_list),
             scenario_failures=sum(step.scenario_failures for step in step_list),
             max_retry_count=max((step.retry_count for step in step_list), default=0),
+            prior_loaded=sum(step.prior_loaded for step in step_list),
+            prior_inserted=sum(step.prior_inserted for step in step_list),
+            prior_selected=sum(step.prior_selected for step in step_list),
+            prior_rejected=sum(step.prior_rejected for step in step_list),
+            prior_skeletons_regenerated=sum(step.prior_skeletons_regenerated for step in step_list),
+            prior_rejected_pressure_cover=sum(step.prior_rejected_pressure_cover for step in step_list),
         )
 
 
@@ -126,6 +138,33 @@ def robust_b_config(*, quick: bool = False) -> RollingCGConfig:
     )
 
 
+def first_week_rescue_config(*, quick: bool = False) -> RollingCGConfig:
+    config = robust_b_config(quick=quick)
+    from dataclasses import replace
+
+    return replace(
+        config,
+        mode="deterministic",
+        horizon_days=7,
+        commit_days=7,
+        lookahead_days=7 if not quick else 2,
+        cg_iterations=6 if not quick else 2,
+        max_pressure_customers=24 if not quick else 8,
+        samples_per_customer=10 if not quick else 3,
+        max_candidates_per_iteration=1800 if not quick else 200,
+        selector_time_limit=900.0 if not quick else 120.0,
+        selector_phase="feasibility",
+        max_hedge_retries=0,
+        multi_reload_columns=True,
+        committed_output_only=True,
+        final_clip_capacity=False,
+        bucket_anchor_cap=120,
+        bucket_resource_time_cap=16,
+        bucket_route_signature_cap=2,
+        bucket_source_region_cap=360,
+    )
+
+
 def run_robust_batch(
     targets: Iterable[RobustBatchTarget],
     output_dir: Path,
@@ -185,6 +224,12 @@ def write_results_csv(results: Iterable[RobustBatchResult], path: Path) -> None:
         "rounds",
         "scenario_failures",
         "max_retry_count",
+        "prior_loaded",
+        "prior_inserted",
+        "prior_selected",
+        "prior_rejected",
+        "prior_skeletons_regenerated",
+        "prior_rejected_pressure_cover",
     ]
     with path.open("w", newline="") as file:
         writer = csv.DictWriter(file, fieldnames=fieldnames)

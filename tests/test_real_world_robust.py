@@ -18,7 +18,7 @@ from roadef_tools.solver.calibration import (
 )
 from roadef_tools.solver.history import load_realized_consumption_history
 from roadef_tools.solver.history import realized_history_from_solution_week
-from roadef_tools.solver.policy_sweep import ManualCsvSweepAdapter, load_policy_sweep_csv
+from roadef_tools.solver.policy_sweep import ManualCsvSweepAdapter, load_policy_sweep_csv, run_policy_sweep
 from roadef_tools.solver.route_priors import route_priors_from_solution
 from roadef_tools.solver.scenario import ForecastDistribution
 
@@ -149,6 +149,57 @@ def test_route_prior_candidate_is_marked_and_not_forced() -> None:
     assert priors[0].shift.operations[0].point == 2
 
 
+def test_route_prior_skeleton_retimes_changed_driver_window() -> None:
+    instance = tiny_instance()
+    driver = replace(
+        instance.drivers[0],
+        time_windows=(replace(instance.drivers[0].time_windows[0], start=60, end=10_000),),
+    )
+    retimed_instance = replace(instance, drivers=(driver,))
+    prior_solution = Solution(
+        shifts=(
+            Shift(
+                0,
+                0,
+                0,
+                0,
+                (Operation(2, 1, 10.0),),
+            ),
+        )
+    )
+
+    priors = route_priors_from_solution(retimed_instance, prior_solution)
+
+    skeletons = [prior for prior in priors if prior.source == "historical_prior_skeleton"]
+    assert len(skeletons) == 1
+    assert [operation.point for operation in skeletons[0].shift.operations] == [2]
+    assert skeletons[0].shift.start == 60
+
+
+def test_pressure_covering_prior_routes_get_priority_indices() -> None:
+    from roadef_tools.solver.column_loop import (
+        ColumnLoopConfig,
+        _fixed_prior_shift_indices,
+        _prior_incumbent_solution,
+        _priority_prior_indices,
+    )
+
+    instance = tiny_instance()
+    prior = Shift(0, 0, 0, 0, (Operation(2, 1, 10.0),))
+    unrelated = Shift(1, 0, 0, 10, (Operation(2, 11, 10.0),))
+
+    assert _priority_prior_indices(instance, [unrelated, prior], (prior,), [2]) == (0, 1)
+    assert _priority_prior_indices(instance, [unrelated, prior], (prior,), [999]) == ()
+    assert _fixed_prior_shift_indices(instance, Solution((unrelated, prior)), (prior,)) == {0, 1}
+    incumbent = _prior_incumbent_solution(
+        instance,
+        Solution(()),
+        ColumnLoopConfig(replace_from_day=0, end_day=1, route_prior_candidates=(prior,), route_prior_sources=("historical_prior",)),
+    )
+    assert incumbent is not None
+    assert incumbent.shifts[0].operations[0].point == 2
+
+
 def test_solution_history_extract_uses_instance_consumption_and_delivery_context() -> None:
     instance = tiny_instance(forecast=(10.0, 20.0, 30.0))
     solution = Solution(
@@ -193,6 +244,9 @@ def test_new_cli_commands_parse() -> None:
             "2",
             "--selector-mip-focus",
             "1",
+            "--selector-phase",
+            "feasibility",
+            "--resume",
         ]
     )
 
@@ -204,6 +258,82 @@ def test_new_cli_commands_parse() -> None:
     assert sweep.selector_mip_gap == 0.05
     assert sweep.selector_threads == 2
     assert sweep.selector_mip_focus == 1
+    assert sweep.selector_phase == "feasibility"
+    assert sweep.resume is True
+
+    rolling = parser.parse_args(
+        [
+            "robust-rolling-rescue",
+            "i.xml",
+            "s.xml",
+            "out.xml",
+            "--rebalance",
+            "--no-final-clip-capacity",
+            "--protect-exact-prior-quantities",
+            "--no-prior-incumbent",
+        ]
+    )
+    assert rolling.rebalance is True
+    assert rolling.no_final_clip_capacity is True
+    assert rolling.protect_exact_prior_quantities is True
+    assert rolling.no_prior_incumbent is True
+
+
+def test_policy_sweep_resume_skips_completed_and_churn_uses_baseline(tmp_path, monkeypatch) -> None:
+    import roadef_tools.solver.policy_sweep as policy_sweep
+
+    instance = tiny_instance()
+    baseline = Solution(shifts=())
+    candidate = Solution(shifts=(Shift(0, 0, 0, 0, (Operation(2, 1, 5.0),)),))
+    distribution = ForecastDistribution(deterministic={2: (1.0,)}, samples={}, quantiles={})
+    policies = (
+        policy_sweep.PolicySweepRow("p1", replace_default_config()),
+        policy_sweep.PolicySweepRow("p2", replace_default_config()),
+    )
+    calls = []
+
+    def fake_rescue(_instance, _baseline, *, config, progress=None):
+        calls.append(config)
+        return candidate, ()
+
+    class FakeSummary:
+        mean_cost = 10.0
+        failure_rate = 0.0
+        mean_safety_kg_min = 0.0
+        total_tank_overfill_steps = 0
+        infeasible_scenarios = 0
+
+    class FakeBacktest:
+        summary = FakeSummary()
+
+    monkeypatch.setattr(policy_sweep, "robust_rolling_rescue", fake_rescue)
+    monkeypatch.setattr(policy_sweep, "backtest_solution_against_distribution", lambda *_args, **_kwargs: FakeBacktest())
+    csv_path = tmp_path / "policy_sweep_results.csv"
+
+    first = run_policy_sweep(
+        instance,
+        baseline,
+        distribution,
+        policies[:1],
+        tmp_path,
+        horizon_days=1,
+        results_csv=csv_path,
+    )
+    second = run_policy_sweep(
+        instance,
+        baseline,
+        distribution,
+        policies,
+        tmp_path,
+        horizon_days=1,
+        resume=True,
+        results_csv=csv_path,
+    )
+
+    assert [result.policy_id for result in first] == ["p1"]
+    assert {result.policy_id for result in second} == {"p1", "p2"}
+    assert len(calls) == 2
+    assert all(result.route_churn > 0.0 for result in second)
 
 
 def load_realized_consumption_history_rows(rows: list[dict[str, str]]):

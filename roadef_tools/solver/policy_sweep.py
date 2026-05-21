@@ -80,13 +80,22 @@ def run_policy_sweep(
     *,
     horizon_days: int,
     progress=None,
+    resume: bool = False,
+    force: bool = False,
+    results_csv: str | Path | None = None,
 ) -> tuple[PolicySweepResult, ...]:
     output_dir = Path(output_dir)
     output_dir.mkdir(parents=True, exist_ok=True)
-    results = []
-    previous_solution = baseline
+    csv_path = Path(results_csv) if results_csv is not None else output_dir / "policy_sweep_results.csv"
+    if force and csv_path.exists():
+        csv_path.unlink()
+    results = list(_load_existing_results(csv_path) if resume and not force else ())
+    completed = {result.policy_id for result in results}
     for policy in policies:
         emit = progress or (lambda _msg: None)
+        if resume and not force and policy.policy_id in completed:
+            emit(f"policy={policy.policy_id} skipped_existing")
+            continue
         emit(f"policy={policy.policy_id}")
         config = replace(
             policy.config,
@@ -103,10 +112,10 @@ def run_policy_sweep(
             distribution,
             horizon_days=horizon_days,
         )
-        stability = route_stability_metrics(previous_solution, solution)
-        previous_solution = solution
+        stability = route_stability_metrics(baseline, solution)
         result = _score_policy(policy, backtest.summary, stability, str(output_xml))
         results.append(result)
+        _append_policy_sweep_result_csv(result, csv_path)
     return tuple(sorted(results, key=lambda result: (not result.feasible, result.robust_score)))
 
 
@@ -119,6 +128,39 @@ def write_policy_sweep_results_csv(results: tuple[PolicySweepResult, ...], path:
         writer.writeheader()
         for result in results:
             writer.writerow(result.flat())
+
+
+def _append_policy_sweep_result_csv(result: PolicySweepResult, path: str | Path) -> None:
+    path = Path(path)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fieldnames = list(PolicySweepResult("", False, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, "").flat())
+    exists = path.exists()
+    with path.open("a", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fieldnames)
+        if not exists:
+            writer.writeheader()
+        writer.writerow(result.flat())
+
+
+def _load_existing_results(path: str | Path) -> tuple[PolicySweepResult, ...]:
+    path = Path(path)
+    if not path.exists():
+        return ()
+    with path.open(newline="") as handle:
+        return tuple(
+            PolicySweepResult(
+                policy_id=row["policy_id"],
+                feasible=_parse_bool(row["feasible"]),
+                mean_cost=float(row["mean_cost"]),
+                failure_rate=float(row["failure_rate"]),
+                safety_severity=float(row["safety_severity"]),
+                overfill_severity=float(row["overfill_severity"]),
+                route_churn=float(row["route_churn"]),
+                robust_score=float(row["robust_score"]),
+                output_xml=row["output_xml"],
+            )
+            for row in csv.DictReader(handle)
+        )
 
 
 def _parse_policy_row(row: dict[str, str], index: int, base_config: RollingCGConfig) -> PolicySweepRow:
@@ -174,3 +216,7 @@ def _coerce_value(raw: str, current):
     if isinstance(current, float):
         return float(raw)
     return raw
+
+
+def _parse_bool(raw: str) -> bool:
+    return raw.strip().lower() in {"1", "true", "yes", "on"}

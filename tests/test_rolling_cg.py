@@ -259,6 +259,14 @@ def test_progress_log_records_iteration_milestone_and_next_danger(tmp_path, monk
         next_after_commit_day=2,
         min_next_after_commit_doi=0.75,
         vulnerable_next_after_commit_customers=[(2, 0.75)],
+        prior_loaded=2,
+        prior_structurally_valid=2,
+        prior_inserted=2,
+        prior_selected=1,
+        prior_rejected=1,
+        prior_skeletons_regenerated=1,
+        prior_rejected_pressure_cover=1,
+        prior_rejected_route_summary="d0-t0-b0:2*2",
         min_lookahead_doi=0.5,
         vulnerable_lookahead_customers=[(2, 0.5)],
     )
@@ -298,4 +306,8 @@ def test_progress_log_records_iteration_milestone_and_next_danger(tmp_path, monk
     ]
     assert rows[0]["next_after_commit_day"] == "2"
     assert rows[0]["next_after_commit_min_doi"] == "0.75"
+    assert rows[0]["prior_loaded"] == "2"
+    assert rows[0]["prior_selected"] == "1"
+    assert rows[0]["prior_rejected_pressure_cover"] == "1"
+    assert rows[0]["prior_rejected_route_summary"] == "d0-t0-b0:2*2"
     assert rows[-1]["event"] == "final"

@@ -56,6 +56,9 @@ def test_robust_batch_cli_parses_quick_mode() -> None:
             "--horizons",
             "14",
             "--quick",
+            "--first-week-rescue-preset",
+            "--candidate-cache-dir",
+            "/tmp/robust-cache",
             "--no-rebalance",
         ]
     )
@@ -64,4 +67,6 @@ def test_robust_batch_cli_parses_quick_mode() -> None:
     assert args.instances == "V2.12"
     assert args.horizons == "14"
     assert args.quick is True
+    assert args.first_week_rescue_preset is True
+    assert str(args.candidate_cache_dir) == "/tmp/robust-cache"
     assert args.no_rebalance is True

@@ -118,9 +118,11 @@ from .solver.policy_sweep import (
     run_policy_sweep,
     write_policy_sweep_results_csv,
 )
-from .solver.route_priors import load_route_prior_candidates, prior_shifts
+from .solver.route_priors import load_route_prior_candidates, prior_shifts, prior_sources
+from .solver.route_swap import transactional_route_swap_search
 from .solver.robust_batch import (
     default_b_targets,
+    first_week_rescue_config,
     robust_b_config,
     run_robust_batch,
     write_results_csv,
@@ -319,11 +321,8 @@ def cmd_robust_rolling_rescue(args: argparse.Namespace) -> int:
             forecast_distribution,
             load_calibration_csv(args.calibration_input),
         )
-    route_prior_candidates = (
-        prior_shifts(load_route_prior_candidates(instance, args.route_priors))
-        if args.route_priors is not None
-        else ()
-    )
+    route_priors = load_route_prior_candidates(instance, args.route_priors) if args.route_priors is not None else ()
+    route_prior_candidates = prior_shifts(route_priors)
     config = RollingCGConfig(
         mode=args.mode,
         horizon_days=args.horizon_days,
@@ -352,22 +351,33 @@ def cmd_robust_rolling_rescue(args: argparse.Namespace) -> int:
         forecast_distribution=forecast_distribution,
         max_rounds=args.max_rounds,
         committed_output_only=args.committed_output_only,
+        final_clip_capacity=not args.no_final_clip_capacity,
         progress_log_path=str(args.progress_log) if args.progress_log else None,
         route_prior_candidates=route_prior_candidates,
+        route_prior_sources=prior_sources(route_priors),
         selector_time_limit=args.selector_time_limit,
         selector_mip_gap=args.selector_mip_gap,
         selector_threads=args.selector_threads,
         selector_mip_focus=args.selector_mip_focus,
         selector_node_limit=args.selector_node_limit,
+        selector_phase=args.selector_phase,
+        candidate_cache_dir=str(args.candidate_cache_dir) if args.candidate_cache_dir else None,
+        bucket_anchor_cap=args.bucket_anchor_cap,
+        bucket_resource_time_cap=args.bucket_resource_time_cap,
+        bucket_route_signature_cap=args.bucket_route_signature_cap,
+        bucket_source_region_cap=args.bucket_source_region_cap,
+        protect_exact_prior_quantities=args.protect_exact_prior_quantities,
+        use_prior_incumbent=not args.no_prior_incumbent,
     )
     solution, steps = robust_rolling_rescue(
         instance, baseline, config=config, progress=print
     )
     
-    # Final Driver Rebalancing Pass
-    from .solver.highs_selector import rebalance_drivers
-    print("Rebalancing driver workloads...")
-    solution = rebalance_drivers(instance, solution)
+    if args.rebalance:
+        from .solver.highs_selector import rebalance_drivers
+
+        print("Rebalancing driver workloads...")
+        solution = rebalance_drivers(instance, solution)
     save_solution(solution, args.output_xml)
     print(f"Saved robust rolling solution to {args.output_xml}")
     print("round,commit_start,commit_end,solve_end,cg_iters,feasible,errors,hard,first_breach,committed_shifts,total_shifts,scenario_feasible,scenario_failures,retry_count,accepted,rejection_reason")
@@ -395,9 +405,13 @@ def cmd_robust_batch_rescue(args: argparse.Namespace) -> int:
     if args.horizons != "auto":
         horizon_days = int(args.horizons)
         targets = [replace(target, horizon_days=horizon_days) for target in targets]
-    config = robust_b_config(quick=args.quick)
+    elif args.first_week_rescue_preset:
+        targets = [replace(target, horizon_days=7) for target in targets]
+    config = first_week_rescue_config(quick=args.quick) if args.first_week_rescue_preset else robust_b_config(quick=args.quick)
     if args.seed is not None:
         config = replace(config, scenario_seed=args.seed)
+    if args.candidate_cache_dir is not None:
+        config = replace(config, candidate_cache_dir=str(args.candidate_cache_dir))
     results = run_robust_batch(
         targets,
         args.output_dir,
@@ -454,17 +468,12 @@ def cmd_week_ahead_ci_rescue(args: argparse.Namespace) -> int:
             forecast_distribution,
             load_calibration_csv(args.calibration_input),
         )
-    route_prior_candidates = (
-        prior_shifts(
-            load_route_prior_candidates(
-                instance,
-                args.route_priors,
-                end_day=args.planning_horizon_days,
-            )
-        )
+    route_priors = (
+        load_route_prior_candidates(instance, args.route_priors, end_day=args.planning_horizon_days)
         if args.route_priors is not None
         else ()
     )
+    route_prior_candidates = prior_shifts(route_priors)
     config = RollingCGConfig(
         mode=args.mode,
         horizon_days=args.planning_horizon_days,
@@ -492,11 +501,20 @@ def cmd_week_ahead_ci_rescue(args: argparse.Namespace) -> int:
         final_clip_capacity=False,
         progress_log_path=str(args.progress_log) if args.progress_log else None,
         route_prior_candidates=route_prior_candidates,
+        route_prior_sources=prior_sources(route_priors),
         selector_time_limit=args.selector_time_limit,
         selector_mip_gap=args.selector_mip_gap,
         selector_threads=args.selector_threads,
         selector_mip_focus=args.selector_mip_focus,
         selector_node_limit=args.selector_node_limit,
+        selector_phase=args.selector_phase,
+        candidate_cache_dir=str(args.candidate_cache_dir) if args.candidate_cache_dir else None,
+        bucket_anchor_cap=args.bucket_anchor_cap,
+        bucket_resource_time_cap=args.bucket_resource_time_cap,
+        bucket_route_signature_cap=args.bucket_route_signature_cap,
+        bucket_source_region_cap=args.bucket_source_region_cap,
+        protect_exact_prior_quantities=args.protect_exact_prior_quantities,
+        use_prior_incumbent=not args.no_prior_incumbent,
     )
     solution, steps = robust_rolling_rescue(
         instance,
@@ -628,6 +646,8 @@ def cmd_robust_policy_sweep(args: argparse.Namespace) -> int:
         selector_threads=args.selector_threads,
         selector_mip_focus=args.selector_mip_focus,
         selector_node_limit=args.selector_node_limit,
+        selector_phase=args.selector_phase,
+        candidate_cache_dir=str(args.candidate_cache_dir) if args.candidate_cache_dir else None,
     )
     policies = load_policy_sweep_csv(args.sweep_csv, base_config)
     results = run_policy_sweep(
@@ -638,6 +658,9 @@ def cmd_robust_policy_sweep(args: argparse.Namespace) -> int:
         args.output_dir,
         horizon_days=args.horizon_days,
         progress=print,
+        resume=args.resume,
+        force=args.force,
+        results_csv=args.output_dir / "policy_sweep_results.csv",
     )
     csv_path = args.output_dir / "policy_sweep_results.csv"
     write_policy_sweep_results_csv(results, csv_path)
@@ -1262,6 +1285,61 @@ def cmd_contest_prune(args: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_route_swap_search(args: argparse.Namespace) -> int:
+    instance = load_instance(args.instance_xml)
+    incumbent = load_solution(args.incumbent_xml)
+    reference = load_solution(args.reference_xml)
+    result = transactional_route_swap_search(
+        instance,
+        incumbent,
+        reference,
+        horizon_days=args.horizon_days,
+        max_remove=args.max_remove,
+        max_add=args.max_add,
+        max_passes=args.max_passes,
+        max_evaluations=args.max_evaluations,
+        min_delivered_fraction=args.min_delivered_fraction,
+        customer_bundles=args.customer_bundles,
+        ignore_tail_call_ins=args.ignore_tail_call_ins,
+    )
+    save_solution(result.solution, args.output_xml)
+    score = score_prefix_with_feasibility_tail(
+        instance,
+        result.solution,
+        score_days=args.horizon_days,
+        feasibility_days=args.horizon_days,
+        ignore_tail_call_ins=args.ignore_tail_call_ins,
+    )
+    print(f"wrote,{args.output_xml}")
+    print(f"evaluated_moves,{result.evaluated_moves}")
+    print(f"accepted_moves,{len(result.moves)}")
+    print(f"initial_ratio,{result.initial_ratio:.12f}")
+    print(f"final_ratio,{result.final_ratio:.12f}")
+    print(
+        "final_score,feasible,{},{},hard,{},cost,{:.6f},delivered,{:.6f},shifts,{}".format(
+            score.feasible,
+            score.feasibility_errors,
+            score.hard_violations,
+            score.scored_estimated_cost,
+            score.scored_delivered_quantity,
+            score.scored_shifts,
+        )
+    )
+    print("move,removed_indices,added_reference_indices,cost,delivered,ratio")
+    for move_index, move in enumerate(result.moves):
+        print(
+            "{},{},{},{:.6f},{:.6f},{:.12f}".format(
+                move_index,
+                " ".join(str(index) for index in move.removed_indices),
+                " ".join(str(index) for index in move.added_reference_indices),
+                move.cost,
+                move.delivered,
+                move.ratio,
+            )
+        )
+    return 0
+
+
 def _default_checker_exe(instance_path: Path) -> Path:
     data_dir = Path(__file__).resolve().parent.parent / "roadef_2016_data"
     if "_ConvertedTo_V2" not in instance_path.name and "Instance_V_1." in instance_path.name:
@@ -1627,6 +1705,21 @@ def build_parser() -> argparse.ArgumentParser:
     contest_prune.add_argument("--source-rounds", type=int, default=10)
     contest_prune.set_defaults(func=cmd_contest_prune)
 
+    route_swap = subparsers.add_parser("route-swap-search")
+    route_swap.add_argument("instance_xml", type=Path)
+    route_swap.add_argument("incumbent_xml", type=Path)
+    route_swap.add_argument("reference_xml", type=Path)
+    route_swap.add_argument("output_xml", type=Path)
+    route_swap.add_argument("--horizon-days", type=int, required=True)
+    route_swap.add_argument("--max-remove", type=int, default=2)
+    route_swap.add_argument("--max-add", type=int, default=2)
+    route_swap.add_argument("--max-passes", type=int, default=3)
+    route_swap.add_argument("--max-evaluations", type=int, default=5000)
+    route_swap.add_argument("--min-delivered-fraction", type=float, default=1.0)
+    route_swap.add_argument("--customer-bundles", action="store_true")
+    route_swap.add_argument("--ignore-tail-call-ins", action="store_true")
+    route_swap.set_defaults(func=cmd_route_swap_search)
+
     highs_repair = subparsers.add_parser("contest-highs-repair")
     highs_repair.add_argument("instance_xml")
     highs_repair.add_argument("solution_xml")
@@ -1788,6 +1881,7 @@ def build_parser() -> argparse.ArgumentParser:
     rolling_cg.add_argument("--max-hedge-retries", type=int, default=2)
     rolling_cg.add_argument("--max-rounds", type=int)
     rolling_cg.add_argument("--committed-output-only", action="store_true")
+    rolling_cg.add_argument("--no-final-clip-capacity", action="store_true")
     rolling_cg.add_argument("--progress-log", type=Path)
     rolling_cg.add_argument("--calibration-input", type=Path)
     rolling_cg.add_argument("--route-priors", type=Path)
@@ -1796,6 +1890,15 @@ def build_parser() -> argparse.ArgumentParser:
     rolling_cg.add_argument("--selector-threads", type=int)
     rolling_cg.add_argument("--selector-mip-focus", type=int)
     rolling_cg.add_argument("--selector-node-limit", type=int)
+    rolling_cg.add_argument("--selector-phase", choices=("auto", "feasibility", "cost"), default="auto")
+    rolling_cg.add_argument("--candidate-cache-dir", type=Path)
+    rolling_cg.add_argument("--bucket-anchor-cap", type=int, default=80)
+    rolling_cg.add_argument("--bucket-resource-time-cap", type=int, default=12)
+    rolling_cg.add_argument("--bucket-route-signature-cap", type=int, default=1)
+    rolling_cg.add_argument("--bucket-source-region-cap", type=int, default=240)
+    rolling_cg.add_argument("--rebalance", action="store_true")
+    rolling_cg.add_argument("--protect-exact-prior-quantities", action="store_true")
+    rolling_cg.add_argument("--no-prior-incumbent", action="store_true")
     rolling_cg.add_argument(
         "--forecast-input",
         type=Path,
@@ -1809,6 +1912,8 @@ def build_parser() -> argparse.ArgumentParser:
     robust_batch.add_argument("--horizons", choices=("auto", "14", "21", "30"), default="auto")
     robust_batch.add_argument("--seed", type=int)
     robust_batch.add_argument("--quick", action="store_true")
+    robust_batch.add_argument("--first-week-rescue-preset", action="store_true")
+    robust_batch.add_argument("--candidate-cache-dir", type=Path)
     robust_batch.add_argument("--no-rebalance", action="store_true")
     robust_batch.set_defaults(func=cmd_robust_batch_rescue)
 
@@ -1855,6 +1960,14 @@ def build_parser() -> argparse.ArgumentParser:
     week_ahead_ci.add_argument("--selector-threads", type=int)
     week_ahead_ci.add_argument("--selector-mip-focus", type=int)
     week_ahead_ci.add_argument("--selector-node-limit", type=int)
+    week_ahead_ci.add_argument("--selector-phase", choices=("auto", "feasibility", "cost"), default="auto")
+    week_ahead_ci.add_argument("--candidate-cache-dir", type=Path)
+    week_ahead_ci.add_argument("--bucket-anchor-cap", type=int, default=80)
+    week_ahead_ci.add_argument("--bucket-resource-time-cap", type=int, default=12)
+    week_ahead_ci.add_argument("--bucket-route-signature-cap", type=int, default=1)
+    week_ahead_ci.add_argument("--bucket-source-region-cap", type=int, default=240)
+    week_ahead_ci.add_argument("--protect-exact-prior-quantities", action="store_true")
+    week_ahead_ci.add_argument("--no-prior-incumbent", action="store_true")
     week_ahead_ci.add_argument("--no-rebalance", action="store_true")
     week_ahead_ci.set_defaults(func=cmd_week_ahead_ci_rescue)
 
@@ -1893,6 +2006,10 @@ def build_parser() -> argparse.ArgumentParser:
     policy_sweep.add_argument("--selector-threads", type=int)
     policy_sweep.add_argument("--selector-mip-focus", type=int)
     policy_sweep.add_argument("--selector-node-limit", type=int)
+    policy_sweep.add_argument("--selector-phase", choices=("auto", "feasibility", "cost"), default="auto")
+    policy_sweep.add_argument("--candidate-cache-dir", type=Path)
+    policy_sweep.add_argument("--resume", action="store_true")
+    policy_sweep.add_argument("--force", action="store_true")
     policy_sweep.set_defaults(func=cmd_robust_policy_sweep)
 
     scenario_backtest = subparsers.add_parser("scenario-backtest")

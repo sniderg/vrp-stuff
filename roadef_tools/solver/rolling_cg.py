@@ -67,11 +67,20 @@ class RollingCGConfig:
     final_clip_capacity: bool = True
     progress_log_path: str | None = None
     route_prior_candidates: tuple[Shift, ...] = ()
+    route_prior_sources: tuple[str, ...] = ()
     selector_time_limit: float = 300.0
     selector_mip_gap: float | None = None
     selector_threads: int | None = None
     selector_mip_focus: int | None = None
     selector_node_limit: int | None = None
+    selector_phase: Literal["auto", "feasibility", "cost"] = "auto"
+    candidate_cache_dir: str | None = None
+    bucket_anchor_cap: int = 80
+    bucket_resource_time_cap: int = 12
+    bucket_route_signature_cap: int = 1
+    bucket_source_region_cap: int = 240
+    protect_exact_prior_quantities: bool = False
+    use_prior_incumbent: bool = True
 
 
 @dataclass(frozen=True)
@@ -94,6 +103,14 @@ class RollingCGStep:
     retry_count: int
     accepted: bool = True
     rejection_reason: str = ""
+    prior_loaded: int = 0
+    prior_structurally_valid: int = 0
+    prior_inserted: int = 0
+    prior_selected: int = 0
+    prior_rejected: int = 0
+    prior_skeletons_regenerated: int = 0
+    prior_rejected_pressure_cover: int = 0
+    prior_rejected_route_summary: str = ""
 
 
 @dataclass(frozen=True)
@@ -236,6 +253,11 @@ def robust_rolling_rescue(
                     f"capacity_buffer={capacity_buffer:.3f}"
                 )
 
+            window_prior_pairs = [
+                (index, shift)
+                for index, shift in enumerate(config.route_prior_candidates)
+                if committed_day * MINUTES_PER_DAY <= shift.start < solve_end_day * MINUTES_PER_DAY
+            ]
             cg_config = ColumnLoopConfig(
                 start_day=0,
                 end_day=solve_end_day,
@@ -255,15 +277,27 @@ def robust_rolling_rescue(
                 commit_end_day=commit_end_day,
                 next_after_commit_day=min(commit_end_day + commit_stride, solve_end_day),
                 route_prior_candidates=tuple(
-                    shift
-                    for shift in config.route_prior_candidates
-                    if committed_day * MINUTES_PER_DAY <= shift.start < solve_end_day * MINUTES_PER_DAY
+                    shift for _index, shift in window_prior_pairs
+                ),
+                route_prior_sources=tuple(
+                    config.route_prior_sources[index]
+                    if index < len(config.route_prior_sources)
+                    else "historical_prior"
+                    for index, _shift in window_prior_pairs
                 ),
                 selector_time_limit=config.selector_time_limit,
                 selector_mip_gap=config.selector_mip_gap,
                 selector_threads=config.selector_threads,
                 selector_mip_focus=config.selector_mip_focus,
                 selector_node_limit=config.selector_node_limit,
+                selector_phase=config.selector_phase,
+                candidate_cache_dir=config.candidate_cache_dir,
+                bucket_anchor_cap=config.bucket_anchor_cap,
+                bucket_resource_time_cap=config.bucket_resource_time_cap,
+                bucket_route_signature_cap=config.bucket_route_signature_cap,
+                bucket_source_region_cap=config.bucket_source_region_cap,
+                protect_exact_prior_quantities=config.protect_exact_prior_quantities,
+                use_prior_incumbent=config.use_prior_incumbent,
             )
 
             window_solution, cg_steps = column_generation_rescue(
@@ -312,6 +346,10 @@ def robust_rolling_rescue(
                 emit(
                     f"  CG Iter {step.iteration:<2} | Pool: {step.pool_size:<4} | Shifts: {step.selected_extra_shifts:<2} | "
                     f"Errors: {step.feasibility_errors:<3} | Hard: {step.hard_violations:<2}{feasibility_msg}{improvement_msg}\n"
+                    f"    ↳ Priors: loaded={step.prior_loaded} inserted={step.prior_inserted} "
+                    f"selected={step.prior_selected} rejected={step.prior_rejected} "
+                    f"rejected_pressure={step.prior_rejected_pressure_cover} skeletons={step.prior_skeletons_regenerated}\n"
+                    f"    ↳ Rejected prior routes: {step.prior_rejected_route_summary or 'None'}\n"
                     f"    ↳ KPI: Cost = {step.cost:.2f} | LogRatio = {step.logistic_ratio:.6f}\n"
                     f"    ↳ Commit (Day {commit_end_day}) Safety: min DOI = {step.min_commit_doi:.2f}d ({danger_status_commit}) | Top Vulnerable: {v_commit_str}\n"
                     f"    ↳ Next (Day {step.next_after_commit_day}) Safety: min DOI = {step.min_next_after_commit_doi:.2f}d ({danger_status_next}) | Top Vulnerable: {v_next_str}\n"
@@ -445,6 +483,18 @@ def robust_rolling_rescue(
                 retry_count=retry_count,
                 accepted=accepted_window,
                 rejection_reason=rejection_reason,
+                prior_loaded=sum(step.prior_loaded for step in cg_steps[-1:]),
+                prior_structurally_valid=sum(step.prior_structurally_valid for step in cg_steps[-1:]),
+                prior_inserted=sum(step.prior_inserted for step in cg_steps[-1:]),
+                prior_selected=sum(step.prior_selected for step in cg_steps[-1:]),
+                prior_rejected=sum(step.prior_rejected for step in cg_steps[-1:]),
+                prior_skeletons_regenerated=sum(step.prior_skeletons_regenerated for step in cg_steps[-1:]),
+                prior_rejected_pressure_cover=sum(step.prior_rejected_pressure_cover for step in cg_steps[-1:]),
+                prior_rejected_route_summary=";".join(
+                    step.prior_rejected_route_summary
+                    for step in cg_steps[-1:]
+                    if step.prior_rejected_route_summary
+                ),
             )
         )
 
@@ -520,6 +570,14 @@ class _ProgressLog:
         "lookahead_min_doi",
         "lookahead_vulnerable",
         "output_shifts",
+        "prior_loaded",
+        "prior_structurally_valid",
+        "prior_inserted",
+        "prior_selected",
+        "prior_rejected",
+        "prior_skeletons_regenerated",
+        "prior_rejected_pressure_cover",
+        "prior_rejected_route_summary",
     )
 
     def __init__(self, path: str | None):
@@ -570,6 +628,14 @@ class _ProgressLog:
                 "next_after_commit_vulnerable": _format_vulnerable(step.vulnerable_next_after_commit_customers),
                 "lookahead_min_doi": step.min_lookahead_doi,
                 "lookahead_vulnerable": _format_vulnerable(step.vulnerable_lookahead_customers),
+                "prior_loaded": step.prior_loaded,
+                "prior_structurally_valid": step.prior_structurally_valid,
+                "prior_inserted": step.prior_inserted,
+                "prior_selected": step.prior_selected,
+                "prior_rejected": step.prior_rejected,
+                "prior_skeletons_regenerated": step.prior_skeletons_regenerated,
+                "prior_rejected_pressure_cover": step.prior_rejected_pressure_cover,
+                "prior_rejected_route_summary": step.prior_rejected_route_summary,
             }
         )
 

@@ -23,3 +23,15 @@ def test_direct_gurobi_selector_model_solves_small_binary_problem() -> None:
     assert values is not None
     assert status in {"Optimal", "TimeLimit"}
     assert values[x] > 0.5
+
+
+@pytest.mark.skipif(importlib.util.find_spec("gurobipy") is None, reason="gurobipy not installed")
+def test_direct_gurobi_selector_model_accepts_mip_start() -> None:
+    model = _GurobiSelectorModel(SelectorConfig(time_limit=5.0))
+    model.addCol(0.0, 0.0, 1.0, 0, [], [])
+    x = model.getNumCol() - 1
+    model.changeColIntegrality(x, "B")
+    model.set_start(x, 1.0)
+    model.model.update()
+
+    assert model.vars[x].Start == 1.0

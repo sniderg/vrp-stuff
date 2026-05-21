@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 from dataclasses import dataclass, replace
-from typing import List, Dict, Tuple, Set
+from typing import Literal, List, Dict, Tuple, Set
 import os
 
 from ..model import Instance, Solution, Shift, Operation
@@ -32,6 +32,10 @@ class SelectorConfig:
     mip_focus: int | None = None
     node_limit: int | None = None
     output: bool = False
+    selector_phase: Literal["auto", "feasibility", "cost"] = "auto"
+    mip_start_shift_indices: tuple[int, ...] = ()
+    priority_shift_indices: tuple[int, ...] = ()
+    priority_shift_bonus: float = 1_000_000.0
 
 
 def select_shifts_with_highs(
@@ -70,7 +74,7 @@ def select_shifts_with_highs(
         if pressure_pricing
         else {}
     )
-    for s in candidates:
+    for i, s in enumerate(candidates):
         travel_cost = _estimate_shift_cost(instance, s)
         served_customers = {
             op.point
@@ -93,18 +97,35 @@ def select_shifts_with_highs(
         # often carry smaller quantities but are exactly what prevents later cliffs.
         # We add a 10,000 flat shift penalty to aggressively force shift consolidation,
         # and scale down the customer coverage rewards.
-        obj_coeff = (
-            travel_cost
-            + 10_000.0
-            - (1_000.0 * len(served_customers))
-            - (500.0 * max(0, len(served_customers) - 1))
-            - (1_000.0 * order_stops)
-            - pressure_bonus
-        )
+        phase = selector_config.selector_phase
+        if phase == "auto":
+            phase = "feasibility" if pressure_by_customer else "cost"
+        if phase == "feasibility":
+            obj_coeff = (
+                0.05 * travel_cost
+                + 1_000.0
+                - (2_500.0 * len(served_customers))
+                - (1_250.0 * max(0, len(served_customers) - 1))
+                - (2_500.0 * order_stops)
+                - (3.0 * pressure_bonus)
+            )
+            if i in selector_config.priority_shift_indices:
+                obj_coeff -= selector_config.priority_shift_bonus
+        else:
+            obj_coeff = (
+                travel_cost
+                + 10_000.0
+                - (1_000.0 * len(served_customers))
+                - (500.0 * max(0, len(served_customers) - 1))
+                - (1_000.0 * order_stops)
+                - pressure_bonus
+            )
         
         highs.addCol(obj_coeff, 0.0, 1.0, 0, np.array([], dtype=np.int32), np.array([], dtype=np.float64))
         idx = highs.getNumCol() - 1
         highs.changeColIntegrality(idx, integer_type)
+        if solved_by_gurobi and i in selector_config.mip_start_shift_indices:
+            highs.set_start(idx, 1.0)
         x_indices.append(idx)
 
     q_variables: list[_QuantityVariable] = []
@@ -234,6 +255,9 @@ class _GurobiSelectorModel:
         self.vars[index].UB = upper
         if lower == upper:
             self.vars[index].Start = lower
+
+    def set_start(self, index, value):
+        self.vars[index].Start = value
 
     def addRow(self, lower, upper, nnz, indices, coefficients):
         expr = self.gp.LinExpr()

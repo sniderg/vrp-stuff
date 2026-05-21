@@ -61,6 +61,7 @@ def repair_with_highs_selection(
     quantity_objective: str = "min-delivered",
     baseline: Solution | None = None,
     fixed_prefix_minutes: int = 0,
+    fixed_shift_indices: set[int] | None = None,
 ) -> tuple[Solution, HighsRepairReport]:
     try:
         import highspy
@@ -80,8 +81,9 @@ def repair_with_highs_selection(
     # Identify variables: deliveries to VMI customers and source load amounts.
     variables: list[_DeliveryVariable] = []
     load_variables: list[_SourceLoadVariable] = []
+    fixed_shift_indices = fixed_shift_indices or set()
     for shift in working.shifts:
-        is_fixed = (shift.start < fixed_prefix_minutes)
+        is_fixed = (shift.start < fixed_prefix_minutes) or (shift.index in fixed_shift_indices)
         has_source = any(op.point in instance.source_by_point for op in shift.operations)
         for op_index, op in enumerate(shift.operations):
             customer = instance.customer_by_point.get(op.point)
@@ -302,6 +304,7 @@ def repair_quantities_with_highs(
     quantity_objective: str = "min-delivered",
     baseline: Solution | None = None,
     fixed_prefix_minutes: int = 0,
+    fixed_shift_indices: set[int] | None = None,
 ) -> tuple[Solution, HighsRepairReport]:
     return repair_with_highs_selection(
         instance,
@@ -312,6 +315,7 @@ def repair_quantities_with_highs(
         quantity_objective=quantity_objective,
         baseline=baseline,
         fixed_prefix_minutes=fixed_prefix_minutes,
+        fixed_shift_indices=fixed_shift_indices,
     )
 
 
