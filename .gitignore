@@ -8,3 +8,18 @@ __pycache__/
 # Jupyter
 notebooks/.ipynb_checkpoints/
 
+# Cython & build artifacts
+roadef_tools/inventory_fast.c
+*.so
+build/
+
+# LP models, logs, & temporary results
+*.lp
+*.out
+*.log
+*.zip
+robust_batch_results.csv
+
+# Local scratch space
+scratch/
+
