@@ -8,6 +8,7 @@ import os
 from ..model import Instance, Solution, Shift, Operation
 from ..inventory import project_customer_inventory, tank_events
 from ..rules import derive_solution
+from .ml_priors import MLRoutePriors
 
 EPSILON = 1e-6
 
@@ -49,6 +50,7 @@ def select_shifts_with_highs(
     pressure_pricing: bool = True,
     baseline: Solution | None = None,
     selector_config: SelectorConfig = SelectorConfig(),
+    ml_priors: MLRoutePriors | None = None,
 ) -> Solution:
     solver = (selector_config.solver or os.environ.get("ROADEF_SOLVER", "highs")).lower()
     solved_by_gurobi = solver == "gurobi"
@@ -69,9 +71,16 @@ def select_shifts_with_highs(
 
     # Variables: x_s is binary, 1 if candidate shift s is selected
     x_indices = []
+    
+    ml_prizes = {}
+    if ml_priors is not None:
+        from .ml_priors import get_start_inventories
+        current_inventories = get_start_inventories(instance, prefix, start_day)
+        ml_prizes = ml_priors.predict_prizes(instance, current_inventories, start_day)
+
     pressure_by_customer = (
         _inventory_pressure_by_customer(instance, prefix, start_day, end_day)
-        if pressure_pricing
+        if pressure_pricing and not ml_prizes
         else {}
     )
     for i, s in enumerate(candidates):
@@ -88,38 +97,52 @@ def select_shifts_with_highs(
             and op.point in instance.customer_by_point
             and instance.customer_by_point[op.point].orders
         )
-        pressure_bonus = _candidate_pressure_bonus(
-            instance,
-            s,
-            pressure_by_customer,
-        )
-        # Reward coverage and route density more than raw volume. Early top-up chains
-        # often carry smaller quantities but are exactly what prevents later cliffs.
-        # We add a 10,000 flat shift penalty to aggressively force shift consolidation,
-        # and scale down the customer coverage rewards.
-        phase = selector_config.selector_phase
-        if phase == "auto":
-            phase = "feasibility" if pressure_by_customer else "cost"
-        if phase == "feasibility":
+        
+        if ml_prizes:
+            phase = selector_config.selector_phase
+            if phase == "auto":
+                phase = "feasibility"
+            shift_penalty = 1_000.0 if phase == "feasibility" else 10_000.0
             obj_coeff = (
-                0.05 * travel_cost
-                + 1_000.0
-                - (2_500.0 * len(served_customers))
-                - (1_250.0 * max(0, len(served_customers) - 1))
-                - (2_500.0 * order_stops)
-                - (3.0 * pressure_bonus)
+                (0.05 * travel_cost if phase == "feasibility" else travel_cost)
+                + shift_penalty
+                - sum(ml_prizes.get(c, 0.0) for c in served_customers)
             )
             if i in selector_config.priority_shift_indices:
                 obj_coeff -= selector_config.priority_shift_bonus
         else:
-            obj_coeff = (
-                travel_cost
-                + 10_000.0
-                - (1_000.0 * len(served_customers))
-                - (500.0 * max(0, len(served_customers) - 1))
-                - (1_000.0 * order_stops)
-                - pressure_bonus
+            pressure_bonus = _candidate_pressure_bonus(
+                instance,
+                s,
+                pressure_by_customer,
             )
+            # Reward coverage and route density more than raw volume. Early top-up chains
+            # often carry smaller quantities but are exactly what prevents later cliffs.
+            # We add a 10,000 flat shift penalty to aggressively force shift consolidation,
+            # and scale down the customer coverage rewards.
+            phase = selector_config.selector_phase
+            if phase == "auto":
+                phase = "feasibility" if pressure_by_customer else "cost"
+            if phase == "feasibility":
+                obj_coeff = (
+                    0.05 * travel_cost
+                    + 1_000.0
+                    - (2_500.0 * len(served_customers))
+                    - (1_250.0 * max(0, len(served_customers) - 1))
+                    - (2_500.0 * order_stops)
+                    - (3.0 * pressure_bonus)
+                )
+                if i in selector_config.priority_shift_indices:
+                    obj_coeff -= selector_config.priority_shift_bonus
+            else:
+                obj_coeff = (
+                    travel_cost
+                    + 10_000.0
+                    - (1_000.0 * len(served_customers))
+                    - (500.0 * max(0, len(served_customers) - 1))
+                    - (1_000.0 * order_stops)
+                    - pressure_bonus
+                )
         
         highs.addCol(obj_coeff, 0.0, 1.0, 0, np.array([], dtype=np.int32), np.array([], dtype=np.float64))
         idx = highs.getNumCol() - 1

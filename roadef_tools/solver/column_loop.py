@@ -12,6 +12,7 @@ from ..model import Instance, Shift, Solution
 from ..highs_repair import repair_quantities_with_highs
 from ..highs_time_opt import optimize_solution_times
 from ..route_cache import RouteCache
+from .ml_priors import MLRoutePriors
 from .highs_selector import (
     SelectorConfig,
     _candidate_pressure_bonus,
@@ -140,6 +141,7 @@ def column_generation_rescue(
     baseline: Solution,
     *,
     config: ColumnLoopConfig = ColumnLoopConfig(),
+    ml_priors: MLRoutePriors | None = None,
 ) -> tuple[Solution, tuple[ColumnLoopStep, ...]]:
     fixed_prefix = _keep_shifts_started_before(
         baseline,
@@ -233,6 +235,7 @@ def column_generation_rescue(
                     pressure_customers,
                 ),
             ),
+            ml_priors=ml_priors,
         )
         selected = optimize_solution_times(instance, selected)
         if config.normalize_source_loads:

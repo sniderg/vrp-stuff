@@ -232,6 +232,14 @@ def cmd_targeted_rescue(args: argparse.Namespace) -> int:
 def cmd_column_generation_rescue(args: argparse.Namespace) -> int:
     instance = load_instance(args.instance_xml)
     baseline = load_solution(args.solution_xml)
+    
+    ml_priors = None
+    if getattr(args, "ml_priors_path", None) is not None:
+        from .solver.ml_priors import MLRoutePriors
+        ml_priors = MLRoutePriors()
+        ml_priors.load(args.ml_priors_path)
+        print(f"Loaded ML route priors from {args.ml_priors_path}")
+
     config = ColumnLoopConfig(
         start_day=args.start_day,
         end_day=args.end_day,
@@ -252,7 +260,7 @@ def cmd_column_generation_rescue(args: argparse.Namespace) -> int:
         normalize_source_loads=not args.no_normalize_source_loads,
         quantity_objective=args.quantity_objective,
     )
-    solution, steps = column_generation_rescue(instance, baseline, config=config)
+    solution, steps = column_generation_rescue(instance, baseline, config=config, ml_priors=ml_priors)
     save_solution(solution, args.output_xml)
     print(f"Saved column-loop solution to {args.output_xml}")
     print("iteration,generated_candidates,pool_size,selected_extra_shifts,feasible,errors,hard,first_safety_breach_minute")
@@ -1814,6 +1822,7 @@ def build_parser() -> argparse.ArgumentParser:
         choices=("min-delivered", "max-delivered"),
         default="min-delivered",
     )
+    column_loop.add_argument("--ml-priors-path", type=Path, default=None)
     column_loop.set_defaults(func=cmd_column_generation_rescue)
 
     alns_cmd = subparsers.add_parser("alns-rescue")
