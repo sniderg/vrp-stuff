@@ -23,6 +23,7 @@ superseded by this route-level ALNS path.
 | `solver/rolling_highs.py` | Rolling horizon HiGHS selection (experimental) |
 | `solver/cluster_greedy.py` | Cluster-aware greedy constructor (baseline generation) |
 | `solver/greedy.py` | Basic greedy constructor |
+| `solver/ml_priors.py` | Feature extraction and subgradient-descent-based prize prediction for candidate shifts |
 | `roadef_tools/highs_repair.py` | HiGHS-based quantity repair after shift selection |
 
 ### Integration Points
@@ -51,6 +52,20 @@ config = ColumnLoopConfig(
     samples_per_customer=6, max_chain_length=3,
 )
 best_solution, steps = column_generation_rescue(instance, baseline, config=config)
+```
+
+**Column-generation loop with ML priors:**
+```python
+from roadef_tools.solver.column_loop import column_generation_rescue, ColumnLoopConfig
+from roadef_tools.solver.ml_priors import MLRoutePriors
+priors = MLRoutePriors()
+priors.load("ml_priors_weights.json")
+
+config = ColumnLoopConfig(
+    start_day=0, end_day=14, replace_from_day=3,
+    iterations=3,
+)
+best_solution, steps = column_generation_rescue(instance, baseline, config=config, ml_priors=priors)
 ```
 
 **Route-level ALNS matheuristic:**
@@ -87,6 +102,12 @@ rescued, report = targeted_rescue(instance, solution, config=config)
   INSTANCE.xml BASELINE.xml OUTPUT.xml \
   --start-day 0 --end-day 14 --iterations 10
 
+# Run column-generation rescue loop with ML route priors
+.venv/bin/python -m roadef_tools.cli column-generation-rescue \
+  INSTANCE.xml BASELINE.xml OUTPUT.xml \
+  --start-day 0 --end-day 14 --iterations 10 \
+  --ml-priors-path ml_priors_weights.json
+
 # Run route-level ALNS around the column-generation repair
 .venv/bin/python -m roadef_tools.cli alns-rescue \
   INSTANCE.xml BASELINE.xml OUTPUT.xml \
@@ -108,6 +129,25 @@ rescued, report = targeted_rescue(instance, solution, config=config)
 
 ---
 
+## ML Route Priors
+
+The ML Route Priors module (`solver/ml_priors.py`) computes state-dependent features for VMI customers (such as inventory ratios, safety thresholds, days of inventory (DOI), and distance metrics) at the start of a planning window. It predicts customer prizes using a linear model, which are then integrated directly into the candidate shift objective function inside the MIP selector (`solver/highs_selector.py`) to steer the solver toward serving critical nodes.
+
+### Training ML Priors
+To train the weights via structured subgradient descent:
+```bash
+python3 scripts/train_ml_priors.py INSTANCE.xml SOLUTION.xml --epochs 10 --lr 0.01 --start-day 3 --end-day 10 --output ml_priors_weights.json
+```
+
+### Batch Evaluation of B Instances
+To evaluate all Set B instances (`V2.12` to `V2.26`) over their first 2 weeks prefix window using the official baselines:
+```bash
+python3 scripts/run_batch_b_official_baselines.py
+```
+This script runs column-generation rescue both with and without the trained priors (`ml_priors_weights.json`) and compiles comparative metrics (feasibility, cost, quantity, and Logistic Ratio) into `scratch/batch_results/batch_b_official_results.csv`.
+
+---
+
 ## HiGHS Boundary
 
 The HiGHS master problem in `highs_selector.py` selects a subset of candidate
@@ -116,7 +156,7 @@ shifts to minimise a weighted penalty objective subject to:
 - **Driver non-overlap**: no two selected shifts for the same driver overlap in time
 - **Trailer non-overlap**: no two selected shifts for the same trailer overlap in time
 - **Order coverage**: each customer order in the window must be covered at least once
-- **Pressure pricing**: safety-critical customers get higher reward for being served
+- **Pressure pricing**: safety-critical customers get higher reward for being served (or steerable via ML Route Priors)
 
 HiGHS is called once per CG iteration. Pool size is capped by
 `max_candidates_per_iteration` to keep the master problem tractable. Typical
@@ -130,9 +170,10 @@ subject to tank capacity and safety constraints.
 
 ## MILP Boundary
 
-Gurobi (`gurobipy`) is listed as an optional dependency but is not used in the
-current pipeline. HiGHS (`highspy`) is the active solver for both shift selection
-and quantity repair.
+Gurobi (`gurobipy`) is integrated as an optional solver. HiGHS (`highspy`) is the active solver for both shift selection and quantity repair. However, if Gurobi is installed and a valid license is available on the machine, you can run the pipeline with Gurobi for a 10x-100x speedup by setting:
+```bash
+export ROADEF_SOLVER=gurobi
+```
 
 ---
 
@@ -146,3 +187,4 @@ MDS coordinates (from `roadef_tools/geo.py`) are reconstructed from distance/tim
 matrices and are used for cluster targeting and neighborhood structure in candidate
 generation. They are **not** physical coordinates — all routing uses the directed
 time/distance matrices.
+
