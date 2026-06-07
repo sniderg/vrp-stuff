@@ -184,6 +184,7 @@ Result: **feasible, cost 5211.65**, zero tank breaches.
 - [ROADEF_V218_NEXT_PLAN.md](docs/ROADEF_V218_NEXT_PLAN.md) — V2.18 solver development plan and failure analysis
 - [SOLVER_INTEGRATION.md](docs/SOLVER_INTEGRATION.md) — Module integration points and MILP boundary design
 - [RESEARCH.md](docs/RESEARCH.md) — IRP patterns from analysis of competitive solutions
+- [INSPIRATION.md](docs/INSPIRATION.md) — External publications and inspiration sources mapping to our solver techniques
 
 ## Data
 
