@@ -25,14 +25,14 @@ instances = sorted(SET_B_DIR.glob("*.xml"))
 print(f"Found {len(instances)} Set B instances.")
 
 # Load ML priors
-priors_path = Path("ml_priors_weights.json")
+priors_path = Path("models/ml_priors_weights.json")
 ml_priors = None
 if priors_path.exists():
     ml_priors = MLRoutePriors()
     ml_priors.load(priors_path)
     print(f"Loaded ML priors from {priors_path}")
 else:
-    print("Warning: ml_priors_weights.json not found. Using default priors.")
+    print("Warning: models/ml_priors_weights.json not found. Using default priors.")
     ml_priors = MLRoutePriors()
 
 results = []

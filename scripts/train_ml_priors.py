@@ -40,7 +40,7 @@ def main():
     parser.add_argument("--lr", type=float, default=0.01, help="Learning rate")
     parser.add_argument("--start-day", type=int, default=3, help="Start day for training windows")
     parser.add_argument("--end-day", type=int, default=10, help="End day for training windows")
-    parser.add_argument("--output", type=str, default="ml_priors_weights.json", help="Path to save trained weights")
+    parser.add_argument("--output", type=str, default="models/ml_priors_weights.json", help="Path to save trained weights")
     args = parser.parse_args()
 
     print(f"Loading instance: {args.instance_path}")

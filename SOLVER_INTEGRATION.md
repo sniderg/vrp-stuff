@@ -59,7 +59,7 @@ best_solution, steps = column_generation_rescue(instance, baseline, config=confi
 from roadef_tools.solver.column_loop import column_generation_rescue, ColumnLoopConfig
 from roadef_tools.solver.ml_priors import MLRoutePriors
 priors = MLRoutePriors()
-priors.load("ml_priors_weights.json")
+priors.load("models/ml_priors_weights.json")
 
 config = ColumnLoopConfig(
     start_day=0, end_day=14, replace_from_day=3,
@@ -106,7 +106,7 @@ rescued, report = targeted_rescue(instance, solution, config=config)
 .venv/bin/python -m roadef_tools.cli column-generation-rescue \
   INSTANCE.xml BASELINE.xml OUTPUT.xml \
   --start-day 0 --end-day 14 --iterations 10 \
-  --ml-priors-path ml_priors_weights.json
+  --ml-priors-path models/ml_priors_weights.json
 
 # Run route-level ALNS around the column-generation repair
 .venv/bin/python -m roadef_tools.cli alns-rescue \
@@ -136,7 +136,7 @@ The ML Route Priors module (`solver/ml_priors.py`) computes state-dependent feat
 ### Training ML Priors
 To train the weights via structured subgradient descent:
 ```bash
-python3 scripts/train_ml_priors.py INSTANCE.xml SOLUTION.xml --epochs 10 --lr 0.01 --start-day 3 --end-day 10 --output ml_priors_weights.json
+python3 scripts/train_ml_priors.py INSTANCE.xml SOLUTION.xml --epochs 10 --lr 0.01 --start-day 3 --end-day 10 --output models/ml_priors_weights.json
 ```
 
 ### Batch Evaluation of B Instances
@@ -144,7 +144,7 @@ To evaluate all Set B instances (`V2.12` to `V2.26`) over their first 2 weeks pr
 ```bash
 python3 scripts/run_batch_b_official_baselines.py
 ```
-This script runs column-generation rescue both with and without the trained priors (`ml_priors_weights.json`) and compiles comparative metrics (feasibility, cost, quantity, and Logistic Ratio) into `scratch/batch_results/batch_b_official_results.csv`.
+This script runs column-generation rescue both with and without the trained priors (`models/ml_priors_weights.json`) and compiles comparative metrics (feasibility, cost, quantity, and Logistic Ratio) into `scratch/batch_results/batch_b_official_results.csv`.
 
 ---
 

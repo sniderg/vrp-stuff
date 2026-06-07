@@ -48,7 +48,19 @@ roadef_tools/
     ├── backtest.py        # Scenario/quantile route backtesting metrics
     ├── rolling_highs.py   # Rolling horizon HiGHS selection
     ├── cluster_greedy.py  # Cluster-aware greedy constructor
+    ├── ml_priors.py       # ML Route Priors implementation (prize prediction)
     └── greedy.py          # Basic greedy constructor
+
+models/
+└── ml_priors_weights.json # Trained linear model weights for ML Route Priors
+
+scripts/
+├── train_ml_priors.py     # Script to train ML priors using subgradient descent
+├── run_batch_b_instances.py # Batch evaluation script using constructed baselines
+└── run_batch_b_official_baselines.py # Batch B evaluation using official contest baselines
+
+scratch/
+└── batch_results/         # Output folder for batch runs and CSV results
 ```
 
 ## Key Commands
