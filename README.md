@@ -185,6 +185,7 @@ Result: **feasible, cost 5211.65**, zero tank breaches.
 - [SOLVER_INTEGRATION.md](docs/SOLVER_INTEGRATION.md) — Module integration points and MILP boundary design
 - [RESEARCH.md](docs/RESEARCH.md) — IRP patterns from analysis of competitive solutions
 - [INSPIRATION.md](docs/INSPIRATION.md) — External publications and inspiration sources mapping to our solver techniques
+- [INFEROPT_DSIRP_ANALYSIS.md](docs/INFEROPT_DSIRP_ANALYSIS.md) — Comparative analysis and integration pathways for the InferOpt DSIRP Julia solver
 
 ## Data
 

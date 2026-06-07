@@ -47,3 +47,13 @@ This document details the external repositories, academic papers, and algorithmi
 * **Fractional Objective Handling**:
   - Because our objective is the ratio of travel/layover cost to delivered quantity, we track the **Logistic Ratio (LR)** as our primary metric.
   - In our master selector ([roadef_tools/solver/highs_selector.py](file:///Users/graydonsnider/PycharmProjects/Vrp_stuff/roadef_tools/solver/highs_selector.py)), we handle this non-linear fractional objective by iteratively solving linear/MIP approximations or optimizing quantity delivery bounds, matching the practical insights of Dinkelbach decomposition.
+
+---
+
+## 4. End-to-End Decision-Focused Learning: InferOpt DSIRP
+* **Repository**: [tonigreif/InferOpt_DSIRP](https://github.com/tonigreif/InferOpt_DSIRP)
+* **Core Technique**: **Decision-Focused Learning for Stochastic IRP**
+* **How it works**:
+  - Predict-then-optimize models often suffer from a mismatch between prediction metrics (MSE) and decision metrics (routing cost).
+  - `InferOpt` uses a differentiable surrogate pipeline to train a neural network that maps inventory/demand forecasting states directly to customer priority prizes, optimizing the final routing quality under a Price-Collecting TSP oracle.
+* **Analysis & Integration Details**: See [docs/INFEROPT_DSIRP_ANALYSIS.md](file:///Users/graydonsnider/PycharmProjects/Vrp_stuff/docs/INFEROPT_DSIRP_ANALYSIS.md) for the complete integration plan and model comparison.
