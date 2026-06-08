@@ -10,27 +10,27 @@
         <IRP_Roadef_Challenge_Operation_>
           <point>85</point>
           <arrival>626</arrival>
-          <Quantity>1042.16685416085</Quantity>
+          <Quantity>1033.813997018</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>24</point>
           <arrival>782</arrival>
-          <Quantity>6833.17571226284</Quantity>
+          <Quantity>6782.32314083426</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>3</point>
           <arrival>969</arrival>
-          <Quantity>584.553892909459</Quantity>
+          <Quantity>575.036750052316</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
           <arrival>1022</arrival>
-          <Quantity>-8459.89645933315</Quantity>
+          <Quantity>-8391.17388790458</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>7</point>
           <arrival>1155</arrival>
-          <Quantity>6238.62997461929</Quantity>
+          <Quantity>6170.46997461929</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
@@ -43,32 +43,32 @@
         <IRP_Roadef_Challenge_Operation_>
           <point>8</point>
           <arrival>1417</arrival>
-          <Quantity>11840.6062927192</Quantity>
+          <Quantity>11760.8148641477</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>94</point>
           <arrival>1588</arrival>
-          <Quantity>1742.87873716518</Quantity>
+          <Quantity>1703.66616573661</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
           <arrival>1657</arrival>
-          <Quantity>-13583.4850298844</Quantity>
+          <Quantity>-13464.4810298843</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>4</point>
           <arrival>1756</arrival>
-          <Quantity>18497.8739999999</Quantity>
+          <Quantity>18312.9779999999</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>46</point>
           <arrival>1856</arrival>
-          <Quantity>521.311280343192</Quantity>
+          <Quantity>513.865566057478</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>90</point>
           <arrival>1947</arrival>
-          <Quantity>1066.13703655134</Quantity>
+          <Quantity>1044.46875083705</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
@@ -81,42 +81,42 @@
         <IRP_Roadef_Challenge_Operation_>
           <point>18</point>
           <arrival>1362</arrival>
-          <Quantity>1899.26125223214</Quantity>
+          <Quantity>1876.71039508929</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>2</point>
           <arrival>1450</arrival>
-          <Quantity>6371.71487207031</Quantity>
+          <Quantity>6328.81087207031</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>57</point>
           <arrival>1507</arrival>
-          <Quantity>824.713166678292</Quantity>
+          <Quantity>814.918880964006</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>99</point>
           <arrival>1611</arrival>
-          <Quantity>884.473173828126</Quantity>
+          <Quantity>880.443173828126</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>29</point>
           <arrival>1720</arrival>
-          <Quantity>2124.88321435547</Quantity>
+          <Quantity>2115.75921435547</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>100</point>
           <arrival>1806</arrival>
-          <Quantity>734.1208</Quantity>
+          <Quantity>724.5208</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
           <arrival>1868</arrival>
-          <Quantity>-12867.1664791643</Quantity>
+          <Quantity>-12769.1633363072</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>77</point>
           <arrival>1953</arrival>
-          <Quantity>653.220000000005</Quantity>
+          <Quantity>639.540000000005</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
@@ -129,17 +129,17 @@
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
           <arrival>2073</arrival>
-          <Quantity>-6238.62997461929</Quantity>
+          <Quantity>-6170.46997461929</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>28</point>
           <arrival>2195</arrival>
-          <Quantity>6541.6225532924</Quantity>
+          <Quantity>6486.47083900669</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
           <arrival>2303</arrival>
-          <Quantity>-6541.6225532924</Quantity>
+          <Quantity>-6486.47083900669</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>80</point>
@@ -157,22 +157,22 @@
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
           <arrival>2793</arrival>
-          <Quantity>-20085.3223168944</Quantity>
+          <Quantity>-19871.3123168944</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>6</point>
           <arrival>2983</arrival>
-          <Quantity>2934.99485714284</Quantity>
+          <Quantity>2892.9897142857</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>35</point>
           <arrival>3211</arrival>
-          <Quantity>6089.32850544085</Quantity>
+          <Quantity>6048.85679115513</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>30</point>
           <arrival>3331</arrival>
-          <Quantity>3834.03464913505</Quantity>
+          <Quantity>3803.4575062779</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
@@ -185,42 +185,42 @@
         <IRP_Roadef_Challenge_Operation_>
           <point>84</point>
           <arrival>2873</arrival>
-          <Quantity>5841.86222956195</Quantity>
+          <Quantity>5828.24451527623</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>45</point>
           <arrival>2972</arrival>
-          <Quantity>1954.04146358817</Quantity>
+          <Quantity>1922.63632073103</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>15</point>
           <arrival>3023</arrival>
-          <Quantity>1992.62900885882</Quantity>
-        </IRP_Roadef_Challenge_Operation_>
-        <IRP_Roadef_Challenge_Operation_>
-          <point>1</point>
-          <arrival>3116</arrival>
-          <Quantity>-10441.7527020089</Quantity>
+          <Quantity>1971.0792945731</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>20</point>
-          <arrival>3229</arrival>
-          <Quantity>2223.24036279297</Quantity>
+          <arrival>3086</arrival>
+          <Quantity>2215.84636279297</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>3169</arrival>
+          <Quantity>-12577.3464933733</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>60</point>
-          <arrival>3271</arrival>
-          <Quantity>690.004067173549</Quantity>
+          <arrival>3278</arrival>
+          <Quantity>681.923210030692</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>71</point>
-          <arrival>3328</arrival>
-          <Quantity>925.486251116072</Quantity>
+          <arrival>3335</arrival>
+          <Quantity>920.150822544643</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
-          <point>81</point>
-          <arrival>3372</arrival>
-          <Quantity>882.63332094029</Quantity>
+          <point>3</point>
+          <arrival>3390</arrival>
+          <Quantity>198</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
@@ -238,12 +238,12 @@
         <IRP_Roadef_Challenge_Operation_>
           <point>69</point>
           <arrival>3821</arrival>
-          <Quantity>835.972452566964</Quantity>
+          <Quantity>828.888166852678</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
-          <point>62</point>
-          <arrival>4087</arrival>
-          <Quantity>2072.49960867745</Quantity>
+          <point>81</point>
+          <arrival>4098</arrival>
+          <Quantity>922.285892368862</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
@@ -256,7 +256,7 @@
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
           <arrival>4233</arrival>
-          <Quantity>-12858.3580117187</Quantity>
+          <Quantity>-12745.3040117187</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>82</point>
@@ -271,17 +271,17 @@
         <IRP_Roadef_Challenge_Operation_>
           <point>93</point>
           <arrival>4531</arrival>
-          <Quantity>13125.8397142856</Quantity>
+          <Quantity>12945.5294285713</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
           <arrival>4631</arrival>
-          <Quantity>-13125.8397142856</Quantity>
+          <Quantity>-12945.5294285713</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>33</point>
           <arrival>4745</arrival>
-          <Quantity>21310.379203683</Quantity>
+          <Quantity>21180.7674893973</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
@@ -294,37 +294,32 @@
         <IRP_Roadef_Challenge_Operation_>
           <point>92</point>
           <arrival>4283</arrival>
-          <Quantity>6125.27059291294</Quantity>
+          <Quantity>6103.66916434151</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
-          <point>3</point>
-          <arrival>4384</arrival>
-          <Quantity>278.099999999999</Quantity>
-        </IRP_Roadef_Challenge_Operation_>
-        <IRP_Roadef_Challenge_Operation_>
-          <point>1</point>
-          <arrival>4437</arrival>
-          <Quantity>-11124.7345949358</Quantity>
+          <point>62</point>
+          <arrival>4392</arrival>
+          <Quantity>2086.5467515346</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>65</point>
-          <arrival>4554</arrival>
-          <Quantity>2270.4284079241</Quantity>
+          <arrival>4484</arrival>
+          <Quantity>2247.31726506696</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>4579</arrival>
+          <Quantity>-12237.6072135184</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>34</point>
-          <arrival>4645</arrival>
-          <Quantity>635.600611328127</Quantity>
+          <arrival>4733</arrival>
+          <Quantity>632.024611328127</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
-          <point>23</point>
-          <arrival>4719</arrival>
-          <Quantity>4901.32884849329</Quantity>
-        </IRP_Roadef_Challenge_Operation_>
-        <IRP_Roadef_Challenge_Operation_>
-          <point>50</point>
-          <arrival>4793</arrival>
-          <Quantity>712.600870535715</Quantity>
+          <point>64</point>
+          <arrival>4813</arrival>
+          <Quantity>405.48713344029</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
@@ -337,32 +332,32 @@
         <IRP_Roadef_Challenge_Operation_>
           <point>87</point>
           <arrival>5002</arrival>
-          <Quantity>885.619702008928</Quantity>
+          <Quantity>694.560273437501</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
           <arrival>5089</arrival>
-          <Quantity>-3794.09176325334</Quantity>
+          <Quantity>-2445.73433265904</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>67</point>
           <arrival>5209</arrival>
-          <Quantity>8265.55638783484</Quantity>
+          <Quantity>7719.46181640626</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
           <arrival>5325</arrival>
-          <Quantity>-8265.55638783484</Quantity>
+          <Quantity>-7719.46181640626</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>70</point>
           <arrival>5457</arrival>
-          <Quantity>1741.37414369419</Quantity>
+          <Quantity>1764.61157226562</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>13</point>
           <arrival>5488</arrival>
-          <Quantity>3448.76953838609</Quantity>
+          <Quantity>3112.37343686249</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
@@ -375,17 +370,17 @@
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
           <arrival>5673</arrival>
-          <Quantity>-21310.379203683</Quantity>
+          <Quantity>-21180.7674893973</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>11</point>
           <arrival>5978</arrival>
-          <Quantity>12163.6079546875</Quantity>
+          <Quantity>12341.9935546875</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>94</point>
           <arrival>6255</arrival>
-          <Quantity>1239.7</Quantity>
+          <Quantity>1201.62514285714</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
@@ -396,52 +391,27 @@
       <start>5640</start>
       <operations>
         <IRP_Roadef_Challenge_Operation_>
-          <point>1</point>
-          <arrival>5673</arrival>
-          <Quantity>-8519.95873828123</Quantity>
-        </IRP_Roadef_Challenge_Operation_>
-        <IRP_Roadef_Challenge_Operation_>
           <point>42</point>
-          <arrival>5970</arrival>
-          <Quantity>5872.68465569197</Quantity>
+          <arrival>5889</arrival>
+          <Quantity>4818.96494140626</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
-          <point>64</point>
-          <arrival>6254</arrival>
-          <Quantity>481.612847726004</Quantity>
+          <point>19</point>
+          <arrival>6250</arrival>
+          <Quantity>1536.65776367188</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
     <IRP_Roadef_Challenge_Shift_>
       <index>12</index>
-      <driver>3</driver>
+      <driver>5</driver>
       <trailer>0</trailer>
-      <start>6360</start>
+      <start>5901</start>
       <operations>
         <IRP_Roadef_Challenge_Operation_>
-          <point>1</point>
-          <arrival>6393</arrival>
-          <Quantity>-5190.14368208028</Quantity>
-        </IRP_Roadef_Challenge_Operation_>
-        <IRP_Roadef_Challenge_Operation_>
-          <point>21</point>
-          <arrival>6594</arrival>
-          <Quantity>7091.50718359374</Quantity>
-        </IRP_Roadef_Challenge_Operation_>
-        <IRP_Roadef_Challenge_Operation_>
-          <point>1</point>
-          <arrival>6776</arrival>
-          <Quantity>-7091.50718359374</Quantity>
-        </IRP_Roadef_Challenge_Operation_>
-        <IRP_Roadef_Challenge_Operation_>
-          <point>19</point>
-          <arrival>6897</arrival>
-          <Quantity>1712.43462081473</Quantity>
-        </IRP_Roadef_Challenge_Operation_>
-        <IRP_Roadef_Challenge_Operation_>
-          <point>63</point>
-          <arrival>6992</arrival>
-          <Quantity>531.095044119699</Quantity>
+          <point>39</point>
+          <arrival>5987</arrival>
+          <Quantity>911.997802734375</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
@@ -449,32 +419,65 @@
       <index>13</index>
       <driver>3</driver>
       <trailer>0</trailer>
-      <start>7800</start>
+      <start>6360</start>
       <operations>
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
-          <arrival>7833</arrival>
-          <Quantity>-2243.52966493443</Quantity>
+          <arrival>6393</arrival>
+          <Quantity>-5788.98281186248</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
-          <point>72</point>
-          <arrival>8020</arrival>
-          <Quantity>6549.16191406253</Quantity>
+          <point>21</point>
+          <arrival>6594</arrival>
+          <Quantity>5929.41318359374</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
-          <arrival>8208</arrival>
-          <Quantity>-6549.16191406253</Quantity>
+          <arrival>6776</arrival>
+          <Quantity>-5929.41318359374</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
-          <point>16</point>
-          <arrival>8336</arrival>
-          <Quantity>2450.83808593747</Quantity>
+          <point>23</point>
+          <arrival>6891</arrival>
+          <Quantity>4695.38041992187</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>50</point>
+          <arrival>6965</arrival>
+          <Quantity>688.615156250002</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
     <IRP_Roadef_Challenge_Shift_>
       <index>14</index>
+      <driver>3</driver>
+      <trailer>0</trailer>
+      <start>7800</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>7833</arrival>
+          <Quantity>-5383.99557617187</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>72</point>
+          <arrival>8020</arrival>
+          <Quantity>9000</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>8208</arrival>
+          <Quantity>-9000</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>16</point>
+          <arrival>8336</arrival>
+          <Quantity>8673.03808593753</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>15</index>
       <driver>0</driver>
       <trailer>1</trailer>
       <start>9960</start>
@@ -482,32 +485,32 @@
         <IRP_Roadef_Challenge_Operation_>
           <point>55</point>
           <arrival>10081</arrival>
-          <Quantity>1410.67373046875</Quantity>
+          <Quantity>3793.47373046875</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
           <arrival>10255</arrival>
-          <Quantity>-14813.9816851563</Quantity>
+          <Quantity>-17337.0924280134</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>27</point>
           <arrival>10324</arrival>
-          <Quantity>10578.846875</Quantity>
+          <Quantity>13848.3468750001</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
           <arrival>10393</arrival>
-          <Quantity>-10578.846875</Quantity>
+          <Quantity>-13848.3468750001</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>9</point>
           <arrival>10511</arrival>
-          <Quantity>2453.6283203125</Quantity>
+          <Quantity>11185.8283203125</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
     <IRP_Roadef_Challenge_Shift_>
-      <index>15</index>
+      <index>16</index>
       <driver>2</driver>
       <trailer>2</trailer>
       <start>9960</start>
@@ -515,60 +518,60 @@
         <IRP_Roadef_Challenge_Operation_>
           <point>97</point>
           <arrival>10073</arrival>
-          <Quantity>302.747019042969</Quantity>
+          <Quantity>825.647019042972</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
           <arrival>10190</arrival>
-          <Quantity>-6657.04452246094</Quantity>
+          <Quantity>-8218.78146888953</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>88</point>
           <arrival>10306</arrival>
-          <Quantity>1467.62329101561</Quantity>
+          <Quantity>7896.22329101564</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>63</point>
+          <arrival>10402</arrival>
+          <Quantity>481.889329833985</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
-          <arrival>10403</arrival>
-          <Quantity>-1467.62329101561</Quantity>
+          <arrival>10464</arrival>
+          <Quantity>-8378.11262084962</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
-          <point>40</point>
-          <arrival>10518</arrival>
-          <Quantity>2621.18500976562</Quantity>
+          <point>48</point>
+          <arrival>10537</arrival>
+          <Quantity>4781.6000000001</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
-          <point>95</point>
-          <arrival>10565</arrival>
-          <Quantity>186.741359863279</Quantity>
-        </IRP_Roadef_Challenge_Operation_>
-      </operations>
-    </IRP_Roadef_Challenge_Shift_>
-    <IRP_Roadef_Challenge_Shift_>
-      <index>16</index>
-      <driver>5</driver>
-      <trailer>0</trailer>
-      <start>10104</start>
-      <operations>
-        <IRP_Roadef_Challenge_Operation_>
-          <point>1</point>
-          <arrival>10137</arrival>
-          <Quantity>-2450.83808593747</Quantity>
-        </IRP_Roadef_Challenge_Operation_>
-        <IRP_Roadef_Challenge_Operation_>
-          <point>80</point>
-          <arrival>10344</arrival>
-          <Quantity>6647.35632812498</Quantity>
-        </IRP_Roadef_Challenge_Operation_>
-        <IRP_Roadef_Challenge_Operation_>
-          <point>39</point>
-          <arrival>10554</arrival>
-          <Quantity>1047.77780273437</Quantity>
+          <point>3</point>
+          <arrival>10602</arrival>
+          <Quantity>207.654285714287</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
     <IRP_Roadef_Challenge_Shift_>
       <index>17</index>
+      <driver>5</driver>
+      <trailer>0</trailer>
+      <start>10080</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>10113</arrival>
+          <Quantity>-8673.03808593753</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>79</point>
+          <arrival>10301</arrival>
+          <Quantity>848.913415527344</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>18</index>
       <driver>3</driver>
       <trailer>0</trailer>
       <start>10680</start>
@@ -576,60 +579,78 @@
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
           <arrival>10713</arrival>
-          <Quantity>-7695.13413085935</Quantity>
+          <Quantity>-848.913415527344</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
-          <point>48</point>
-          <arrival>10786</arrival>
-          <Quantity>2697.90000000006</Quantity>
-        </IRP_Roadef_Challenge_Operation_>
-        <IRP_Roadef_Challenge_Operation_>
-          <point>44</point>
-          <arrival>10861</arrival>
-          <Quantity>130.895419921877</Quantity>
+          <point>40</point>
+          <arrival>10828</arrival>
+          <Quantity>7046.58500976562</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
-          <arrival>10925</arrival>
-          <Quantity>-2828.79541992194</Quantity>
+          <arrival>10922</arrival>
+          <Quantity>-7046.58500976562</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>44</point>
+          <arrival>11016</arrival>
+          <Quantity>805.295419921876</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>32</point>
-          <arrival>11048</arrival>
-          <Quantity>485.31634521484</Quantity>
+          <arrival>11094</arrival>
+          <Quantity>1988.31634521484</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>52</point>
-          <arrival>11103</arrival>
-          <Quantity>272.589565429687</Quantity>
+          <arrival>11149</arrival>
+          <Quantity>690.389565429684</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>77</point>
-          <arrival>11179</arrival>
-          <Quantity>412.020000000004</Quantity>
+          <arrival>11225</arrival>
+          <Quantity>334.500000000006</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
-          <point>86</point>
-          <arrival>11264</arrival>
-          <Quantity>182.506965332032</Quantity>
-        </IRP_Roadef_Challenge_Operation_>
-      </operations>
-    </IRP_Roadef_Challenge_Shift_>
-    <IRP_Roadef_Challenge_Shift_>
-      <index>18</index>
-      <driver>4</driver>
-      <trailer>2</trailer>
-      <start>10799</start>
-      <operations>
-        <IRP_Roadef_Challenge_Operation_>
-          <point>74</point>
-          <arrival>10980</arrival>
-          <Quantity>846.074511718752</Quantity>
+          <point>76</point>
+          <arrival>11284</arrival>
+          <Quantity>346.831083984373</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
     <IRP_Roadef_Challenge_Shift_>
       <index>19</index>
+      <driver>4</driver>
+      <trailer>2</trailer>
+      <start>10680</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>10713</arrival>
+          <Quantity>-4989.25428571439</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>74</point>
+          <arrival>11044</arrival>
+          <Quantity>8666.27451171875</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>20</index>
+      <driver>1</driver>
+      <trailer>1</trailer>
+      <start>10837</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>10870</arrival>
+          <Quantity>-11185.8283203125</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>21</index>
       <driver>0</driver>
       <trailer>1</trailer>
       <start>11400</start>
@@ -637,27 +658,27 @@
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
           <arrival>11433</arrival>
-          <Quantity>-2453.6283203125</Quantity>
+          <Quantity>-0</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>54</point>
           <arrival>11711</arrival>
-          <Quantity>20586.8612600446</Quantity>
+          <Quantity>14862.7201171875</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>73</point>
           <arrival>11883</arrival>
-          <Quantity>991.972161760601</Quantity>
+          <Quantity>999.017590332031</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>78</point>
           <arrival>11937</arrival>
-          <Quantity>580.925341029577</Quantity>
+          <Quantity>447.598483886723</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
     <IRP_Roadef_Challenge_Shift_>
-      <index>20</index>
+      <index>22</index>
       <driver>2</driver>
       <trailer>2</trailer>
       <start>11400</start>
@@ -665,42 +686,42 @@
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
           <arrival>11433</arrival>
-          <Quantity>-3654.00088134765</Quantity>
+          <Quantity>-8666.27451171875</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>89</point>
           <arrival>11576</arrival>
-          <Quantity>986.843330078125</Quantity>
+          <Quantity>8396.00333007808</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
           <arrival>11700</arrival>
-          <Quantity>-986.843330078125</Quantity>
+          <Quantity>-8396.00333007808</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>31</point>
           <arrival>11819</arrival>
-          <Quantity>936.866406249998</Quantity>
+          <Quantity>7476.46640625</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>49</point>
           <arrival>11882</arrival>
-          <Quantity>74.2762670898447</Quantity>
+          <Quantity>660.276267089846</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
-          <point>3</point>
-          <arrival>11963</arrival>
-          <Quantity>203.337142857143</Quantity>
+          <point>86</point>
+          <arrival>11943</arrival>
+          <Quantity>869.226965332031</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
-          <point>76</point>
-          <arrival>12029</arrival>
-          <Quantity>132.131083984375</Quantity>
+          <point>95</point>
+          <arrival>11991</arrival>
+          <Quantity>921.781359863282</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
     <IRP_Roadef_Challenge_Shift_>
-      <index>21</index>
+      <index>23</index>
       <driver>3</driver>
       <trailer>0</trailer>
       <start>12120</start>
@@ -708,40 +729,73 @@
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
           <arrival>12153</arrival>
-          <Quantity>-1352.43287597656</Quantity>
+          <Quantity>-4165.33241455078</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>22</point>
           <arrival>12324</arrival>
-          <Quantity>1095.84797763824</Quantity>
+          <Quantity>3294.34797763823</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
           <arrival>12481</arrival>
-          <Quantity>-1095.84797763824</Quantity>
+          <Quantity>-3294.34797763823</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>5</point>
           <arrival>12609</arrival>
-          <Quantity>7904.15202236176</Quantity>
+          <Quantity>7744.31699218753</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
     <IRP_Roadef_Challenge_Shift_>
-      <index>22</index>
-      <driver>1</driver>
-      <trailer>1</trailer>
-      <start>12138</start>
+      <index>24</index>
+      <driver>4</driver>
+      <trailer>2</trailer>
+      <start>12120</start>
       <operations>
         <IRP_Roadef_Challenge_Operation_>
-          <point>10</point>
-          <arrival>12384</arrival>
-          <Quantity>207.525310058594</Quantity>
+          <point>1</point>
+          <arrival>12153</arrival>
+          <Quantity>-9927.75099853516</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>12340</arrival>
+          <Quantity>-0</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>7</point>
+          <arrival>12473</arrival>
+          <Quantity>5475.51999999998</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>72</point>
+          <arrival>12612</arrival>
+          <Quantity>132.099999999999</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
     <IRP_Roadef_Challenge_Shift_>
-      <index>23</index>
+      <index>25</index>
+      <driver>1</driver>
+      <trailer>1</trailer>
+      <start>12195</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>12228</arrival>
+          <Quantity>-16309.3361914062</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>72</point>
+          <arrival>12558</arrival>
+          <Quantity>18530.88203125</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>26</index>
       <driver>0</driver>
       <trailer>1</trailer>
       <start>12840</start>
@@ -749,32 +803,22 @@
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
           <arrival>12873</arrival>
-          <Quantity>-22367.2840728934</Quantity>
+          <Quantity>-18530.88203125</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>25</point>
           <arrival>13077</arrival>
-          <Quantity>4056.0296875</Quantity>
+          <Quantity>17526.1296875001</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
-          <point>1</point>
-          <arrival>13280</arrival>
-          <Quantity>-4056.0296875</Quantity>
-        </IRP_Roadef_Challenge_Operation_>
-        <IRP_Roadef_Challenge_Operation_>
-          <point>17</point>
-          <arrival>13381</arrival>
-          <Quantity>1313.989609375</Quantity>
-        </IRP_Roadef_Challenge_Operation_>
-        <IRP_Roadef_Challenge_Operation_>
-          <point>75</point>
-          <arrival>13469</arrival>
-          <Quantity>1698.23632812499</Quantity>
+          <point>10</point>
+          <arrival>13259</arrival>
+          <Quantity>829.125310058591</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
     <IRP_Roadef_Challenge_Shift_>
-      <index>24</index>
+      <index>27</index>
       <driver>2</driver>
       <trailer>2</trailer>
       <start>12840</start>
@@ -782,45 +826,32 @@
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
           <arrival>12873</arrival>
-          <Quantity>-1346.61090018136</Quantity>
+          <Quantity>-5607.61999999998</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>83</point>
           <arrival>13008</arrival>
-          <Quantity>11320.0750000001</Quantity>
+          <Quantity>11525.1750000001</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
           <arrival>13140</arrival>
-          <Quantity>-11320.0750000001</Quantity>
+          <Quantity>-11525.1750000001</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>37</point>
           <arrival>13261</arrival>
-          <Quantity>956.070556640623</Quantity>
+          <Quantity>5191.57055664061</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>53</point>
           <arrival>13382</arrival>
-          <Quantity>184.396506347656</Quantity>
+          <Quantity>1046.45650634766</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
     <IRP_Roadef_Challenge_Shift_>
-      <index>25</index>
-      <driver>5</driver>
-      <trailer>0</trailer>
-      <start>13099</start>
-      <operations>
-        <IRP_Roadef_Challenge_Operation_>
-          <point>79</point>
-          <arrival>13200</arrival>
-          <Quantity>159.793415527345</Quantity>
-        </IRP_Roadef_Challenge_Operation_>
-      </operations>
-    </IRP_Roadef_Challenge_Shift_>
-    <IRP_Roadef_Challenge_Shift_>
-      <index>26</index>
+      <index>28</index>
       <driver>3</driver>
       <trailer>0</trailer>
       <start>13560</start>
@@ -828,154 +859,73 @@
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
           <arrival>13593</arrival>
-          <Quantity>-8063.94543788911</Quantity>
+          <Quantity>-7744.31699218753</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>38</point>
           <arrival>13727</arrival>
-          <Quantity>2036.91928710937</Quantity>
+          <Quantity>6847.11928710941</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
           <arrival>13847</arrival>
-          <Quantity>-2036.91928710937</Quantity>
+          <Quantity>-6847.11928710941</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>47</point>
           <arrival>13962</arrival>
-          <Quantity>192.751323242187</Quantity>
+          <Quantity>335.451323242189</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
           <arrival>14040</arrival>
-          <Quantity>-192.751323242186</Quantity>
+          <Quantity>-335.451323242189</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>66</point>
           <arrival>14115</arrival>
-          <Quantity>805.370996093746</Quantity>
-        </IRP_Roadef_Challenge_Operation_>
-      </operations>
-    </IRP_Roadef_Challenge_Shift_>
-    <IRP_Roadef_Challenge_Shift_>
-      <index>27</index>
-      <driver>1</driver>
-      <trailer>1</trailer>
-      <start>13647</start>
-      <operations>
-        <IRP_Roadef_Challenge_Operation_>
-          <point>14</point>
-          <arrival>13920</arrival>
-          <Quantity>154.489721679689</Quantity>
-        </IRP_Roadef_Challenge_Operation_>
-      </operations>
-    </IRP_Roadef_Challenge_Shift_>
-    <IRP_Roadef_Challenge_Shift_>
-      <index>28</index>
-      <driver>0</driver>
-      <trailer>1</trailer>
-      <start>14280</start>
-      <operations>
-        <IRP_Roadef_Challenge_Operation_>
-          <point>1</point>
-          <arrival>14313</arrival>
-          <Quantity>-3166.71565917968</Quantity>
-        </IRP_Roadef_Challenge_Operation_>
-        <IRP_Roadef_Challenge_Operation_>
-          <point>91</point>
-          <arrival>14500</arrival>
-          <Quantity>941.907421874998</Quantity>
-        </IRP_Roadef_Challenge_Operation_>
-        <IRP_Roadef_Challenge_Operation_>
-          <point>1</point>
-          <arrival>14671</arrival>
-          <Quantity>-941.907421874999</Quantity>
-        </IRP_Roadef_Challenge_Operation_>
-        <IRP_Roadef_Challenge_Operation_>
-          <point>56</point>
-          <arrival>14800</arrival>
-          <Quantity>3089.36093749999</Quantity>
-        </IRP_Roadef_Challenge_Operation_>
-        <IRP_Roadef_Challenge_Operation_>
-          <point>94</point>
-          <arrival>14904</arrival>
-          <Quantity>594.312571428569</Quantity>
+          <Quantity>6728.57099609375</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
     <IRP_Roadef_Challenge_Shift_>
       <index>29</index>
-      <driver>2</driver>
-      <trailer>2</trailer>
-      <start>14280</start>
+      <driver>1</driver>
+      <trailer>1</trailer>
+      <start>13560</start>
       <operations>
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
-          <arrival>14313</arrival>
-          <Quantity>-1140.46706298828</Quantity>
+          <arrival>13593</arrival>
+          <Quantity>-18355.2549975587</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
-          <point>82</point>
-          <arrival>14412</arrival>
-          <Quantity>9819.18375000001</Quantity>
+          <point>17</point>
+          <arrival>13694</arrival>
+          <Quantity>6888.03460937501</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
-          <point>1</point>
-          <arrival>14512</arrival>
-          <Quantity>-9819.18375000001</Quantity>
+          <point>80</point>
+          <arrival>13889</arrival>
+          <Quantity>13983.216328125</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
-          <point>58</point>
-          <arrival>14660</arrival>
-          <Quantity>3497.75624999999</Quantity>
-        </IRP_Roadef_Challenge_Operation_>
-        <IRP_Roadef_Challenge_Operation_>
-          <point>1</point>
-          <arrival>14805</arrival>
-          <Quantity>-3497.75624999999</Quantity>
-        </IRP_Roadef_Challenge_Operation_>
-        <IRP_Roadef_Challenge_Operation_>
-          <point>100</point>
-          <arrival>14896</arrival>
-          <Quantity>33.0599999999998</Quantity>
+          <point>7</point>
+          <arrival>14140</arrival>
+          <Quantity>795.19999999999</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
     <IRP_Roadef_Challenge_Shift_>
       <index>30</index>
-      <driver>3</driver>
-      <trailer>0</trailer>
-      <start>15000</start>
+      <driver>4</driver>
+      <trailer>2</trailer>
+      <start>13647</start>
       <operations>
         <IRP_Roadef_Challenge_Operation_>
-          <point>1</point>
-          <arrival>15033</arrival>
-          <Quantity>-805.370996093747</Quantity>
-        </IRP_Roadef_Challenge_Operation_>
-        <IRP_Roadef_Challenge_Operation_>
-          <point>36</point>
-          <arrival>15150</arrival>
-          <Quantity>475.454150390628</Quantity>
-        </IRP_Roadef_Challenge_Operation_>
-        <IRP_Roadef_Challenge_Operation_>
-          <point>1</point>
-          <arrival>15246</arrival>
-          <Quantity>-475.454150390628</Quantity>
-        </IRP_Roadef_Challenge_Operation_>
-        <IRP_Roadef_Challenge_Operation_>
-          <point>45</point>
-          <arrival>15360</arrival>
-          <Quantity>435.005142857145</Quantity>
-        </IRP_Roadef_Challenge_Operation_>
-        <IRP_Roadef_Challenge_Operation_>
-          <point>1</point>
-          <arrival>15437</arrival>
-          <Quantity>-435.005142857144</Quantity>
-        </IRP_Roadef_Challenge_Operation_>
-        <IRP_Roadef_Challenge_Operation_>
-          <point>7</point>
-          <arrival>15570</arrival>
-          <Quantity>6815.99999999997</Quantity>
+          <point>14</point>
+          <arrival>13920</arrival>
+          <Quantity>1627.28972167969</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
@@ -983,17 +933,32 @@
       <index>31</index>
       <driver>0</driver>
       <trailer>1</trailer>
-      <start>15720</start>
+      <start>14280</start>
       <operations>
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
-          <arrival>15753</arrival>
-          <Quantity>-3683.67350892856</Quantity>
+          <arrival>14313</arrival>
+          <Quantity>-21666.4509375</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
-          <point>11</point>
-          <arrival>16058</arrival>
-          <Quantity>13867</Quantity>
+          <point>91</point>
+          <arrival>14500</arrival>
+          <Quantity>6435.307421875</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>14671</arrival>
+          <Quantity>-6435.307421875</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>56</point>
+          <arrival>14800</arrival>
+          <Quantity>10964.125</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>94</point>
+          <arrival>14904</arrival>
+          <Quantity>998.100000000012</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
@@ -1001,27 +966,37 @@
       <index>32</index>
       <driver>2</driver>
       <trailer>2</trailer>
-      <start>15720</start>
+      <start>14280</start>
       <operations>
         <IRP_Roadef_Challenge_Operation_>
-          <point>57</point>
-          <arrival>15802</arrival>
-          <Quantity>87.8342857142851</Quantity>
+          <point>1</point>
+          <arrival>14313</arrival>
+          <Quantity>-7865.31678466796</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
-          <point>6</point>
-          <arrival>15991</arrival>
-          <Quantity>339.105142857133</Quantity>
+          <point>75</point>
+          <arrival>14384</arrival>
+          <Quantity>6821.43632812493</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
-          <arrival>16165</arrival>
-          <Quantity>-459.999428571418</Quantity>
+          <arrival>14440</arrival>
+          <Quantity>-6821.43632812493</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
-          <point>16</point>
-          <arrival>16293</arrival>
-          <Quantity>7622.6</Quantity>
+          <point>82</point>
+          <arrival>14539</arrival>
+          <Quantity>13350</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>14639</arrival>
+          <Quantity>-13350</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>58</point>
+          <arrival>14787</arrival>
+          <Quantity>13350</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
@@ -1029,45 +1004,60 @@
       <index>33</index>
       <driver>3</driver>
       <trailer>0</trailer>
-      <start>16440</start>
+      <start>15000</start>
       <operations>
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
-          <arrival>16473</arrival>
-          <Quantity>-6815.99999999997</Quantity>
+          <arrival>15033</arrival>
+          <Quantity>-6728.57099609375</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
-          <point>98</point>
-          <arrival>16590</arrival>
-          <Quantity>9000</Quantity>
+          <point>57</point>
+          <arrival>15151</arrival>
+          <Quantity>677.828571428573</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>36</point>
+          <arrival>15200</arrival>
+          <Quantity>5105.0541503906</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
-          <arrival>16692</arrival>
-          <Quantity>-9000</Quantity>
+          <arrival>15296</arrival>
+          <Quantity>-5782.88272181917</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
-          <point>1</point>
-          <arrival>16950</arrival>
-          <Quantity>-0</Quantity>
+          <point>45</point>
+          <arrival>15410</arrival>
+          <Quantity>1875.91028571428</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>100</point>
+          <arrival>15477</arrival>
+          <Quantity>602.66</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>18</point>
+          <arrival>15535</arrival>
+          <Quantity>787.001714285705</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>64</point>
+          <arrival>15609</arrival>
+          <Quantity>241.891428571428</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
     <IRP_Roadef_Challenge_Shift_>
       <index>34</index>
-      <driver>2</driver>
-      <trailer>2</trailer>
-      <start>20227</start>
+      <driver>1</driver>
+      <trailer>1</trailer>
+      <start>15000</start>
       <operations>
         <IRP_Roadef_Challenge_Operation_>
-          <point>1</point>
-          <arrival>20260</arrival>
-          <Quantity>-7622.6</Quantity>
-        </IRP_Roadef_Challenge_Operation_>
-        <IRP_Roadef_Challenge_Operation_>
-          <point>72</point>
-          <arrival>20447</arrival>
-          <Quantity>13350</Quantity>
+          <point>11</point>
+          <arrival>15269</arrival>
+          <Quantity>10897.775</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
@@ -1075,123 +1065,1765 @@
       <index>35</index>
       <driver>0</driver>
       <trailer>1</trailer>
-      <start>20315</start>
+      <start>15720</start>
       <operations>
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
-          <arrival>20348</arrival>
-          <Quantity>-13867</Quantity>
+          <arrival>15753</arrival>
+          <Quantity>-22860</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
-          <point>82</point>
-          <arrival>20447</arrival>
-          <Quantity>22860</Quantity>
+          <point>6</point>
+          <arrival>15943</arrival>
+          <Quantity>2373.41028571424</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>16117</arrival>
+          <Quantity>-2373.41028571424</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>16</point>
+          <arrival>16245</arrival>
+          <Quantity>16044.1</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>85</point>
+          <arrival>16383</arrival>
+          <Quantity>139.44571428571</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
     <IRP_Roadef_Challenge_Shift_>
       <index>36</index>
-      <driver>5</driver>
-      <trailer>0</trailer>
-      <start>20412</start>
+      <driver>2</driver>
+      <trailer>2</trailer>
+      <start>15720</start>
       <operations>
         <IRP_Roadef_Challenge_Operation_>
-          <point>27</point>
-          <arrival>20447</arrival>
-          <Quantity>9000</Quantity>
+          <point>1</point>
+          <arrival>15753</arrival>
+          <Quantity>-13350</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>98</point>
+          <arrival>15870</arrival>
+          <Quantity>6382.65703124998</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>15972</arrival>
+          <Quantity>-6382.65703124998</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>96</point>
+          <arrival>16105</arrival>
+          <Quantity>9507.88662109372</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>16230</arrival>
+          <Quantity>-9507.88662109372</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>3</point>
+          <arrival>16313</arrival>
+          <Quantity>420.000000000003</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>77</point>
+          <arrival>16355</arrival>
+          <Quantity>1060.86</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
     <IRP_Roadef_Challenge_Shift_>
       <index>37</index>
-      <driver>1</driver>
-      <trailer>1</trailer>
-      <start>23683</start>
+      <driver>3</driver>
+      <trailer>0</trailer>
+      <start>16440</start>
       <operations>
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
-          <arrival>23716</arrival>
-          <Quantity>-22860</Quantity>
+          <arrival>16473</arrival>
+          <Quantity>-3507.46342857142</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
-          <point>72</point>
-          <arrival>23903</arrival>
-          <Quantity>10183.6201171875</Quantity>
+          <point>83</point>
+          <arrival>16608</arrival>
+          <Quantity>9000</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>16740</arrival>
+          <Quantity>-9000</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>93</point>
+          <arrival>16839</arrival>
+          <Quantity>6461.92057142852</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>16939</arrival>
+          <Quantity>-6461.92057142852</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>82</point>
+          <arrival>17038</arrival>
+          <Quantity>8999.99999999999</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
     <IRP_Roadef_Challenge_Shift_>
       <index>38</index>
-      <driver>4</driver>
-      <trailer>2</trailer>
-      <start>23742</start>
+      <driver>3</driver>
+      <trailer>0</trailer>
+      <start>17880</start>
       <operations>
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
-          <arrival>23775</arrival>
-          <Quantity>-13350</Quantity>
+          <arrival>17913</arrival>
+          <Quantity>-8999.99999999999</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
-          <point>16</point>
-          <arrival>23903</arrival>
-          <Quantity>9197.79999999999</Quantity>
+          <point>4</point>
+          <arrival>18012</arrival>
+          <Quantity>6226.69199999991</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>18112</arrival>
+          <Quantity>-6226.69199999991</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>15</point>
+          <arrival>18243</arrival>
+          <Quantity>1565.79942857142</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>60</point>
+          <arrival>18313</arrival>
+          <Quantity>853.961714285712</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>90</point>
+          <arrival>18371</arrival>
+          <Quantity>2425.73657142857</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>59</point>
+          <arrival>18445</arrival>
+          <Quantity>2054.10468750001</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
     <IRP_Roadef_Challenge_Shift_>
       <index>39</index>
-      <driver>3</driver>
-      <trailer>0</trailer>
-      <start>23752</start>
+      <driver>0</driver>
+      <trailer>1</trailer>
+      <start>20040</start>
       <operations>
         <IRP_Roadef_Challenge_Operation_>
-          <point>9</point>
-          <arrival>23903</arrival>
-          <Quantity>3606.4</Quantity>
+          <point>46</point>
+          <arrival>20119</arrival>
+          <Quantity>715.651428571429</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>20221</arrival>
+          <Quantity>-16899.1971428571</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>27</point>
+          <arrival>20290</arrival>
+          <Quantity>12319.1999999999</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>20359</arrival>
+          <Quantity>-12319.1999999999</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>41</point>
+          <arrival>20458</arrival>
+          <Quantity>12307.04375</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>94</point>
+          <arrival>20553</arrival>
+          <Quantity>2230.1</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>85</point>
+          <arrival>20669</arrival>
+          <Quantity>1058.96</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
     <IRP_Roadef_Challenge_Shift_>
       <index>40</index>
-      <driver>3</driver>
-      <trailer>0</trailer>
-      <start>25497</start>
+      <driver>2</driver>
+      <trailer>2</trailer>
+      <start>20040</start>
       <operations>
         <IRP_Roadef_Challenge_Operation_>
-          <point>17</point>
-          <arrival>25631</arrival>
-          <Quantity>7327.50000000009</Quantity>
+          <point>19</point>
+          <arrival>20118</arrival>
+          <Quantity>2353.3</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>34</point>
+          <arrival>20218</arrival>
+          <Quantity>705.592000000002</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>20342</arrival>
+          <Quantity>-4539.752</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>28</point>
+          <arrival>20464</arrival>
+          <Quantity>6550.40206194198</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>30</point>
+          <arrival>20578</arrival>
+          <Quantity>3969.65428571429</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>77</point>
+          <arrival>20672</arrival>
+          <Quantity>410.400000000003</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
     <IRP_Roadef_Challenge_Shift_>
       <index>41</index>
-      <driver>1</driver>
-      <trailer>1</trailer>
-      <start>25499</start>
+      <driver>3</driver>
+      <trailer>0</trailer>
+      <start>20760</start>
       <operations>
         <IRP_Roadef_Challenge_Operation_>
           <point>1</point>
-          <arrival>25532</arrival>
-          <Quantity>-10183.6201171875</Quantity>
+          <arrival>20793</arrival>
+          <Quantity>-6899.60240178572</Quantity>
         </IRP_Roadef_Challenge_Operation_>
         <IRP_Roadef_Challenge_Operation_>
-          <point>82</point>
-          <arrival>25631</arrival>
-          <Quantity>10466.2494499997</Quantity>
+          <point>61</point>
+          <arrival>20904</arrival>
+          <Quantity>5069.41796875</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>21001</arrival>
+          <Quantity>-5069.41796875</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>83</point>
+          <arrival>21136</arrival>
+          <Quantity>8999.99999999999</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>21268</arrival>
+          <Quantity>-8999.99999999999</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>48</point>
+          <arrival>21341</arrival>
+          <Quantity>5893.1</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>18</point>
+          <arrival>21405</arrival>
+          <Quantity>2354.4</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>
     <IRP_Roadef_Challenge_Shift_>
       <index>42</index>
-      <driver>4</driver>
-      <trailer>2</trailer>
-      <start>25507</start>
+      <driver>0</driver>
+      <trailer>1</trailer>
+      <start>21480</start>
       <operations>
         <IRP_Roadef_Challenge_Operation_>
+          <point>69</point>
+          <arrival>21752</arrival>
+          <Quantity>635.828571428572</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>85</point>
+          <arrival>22093</arrival>
+          <Quantity>78.4000000000005</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>43</index>
+      <driver>2</driver>
+      <trailer>2</trailer>
+      <start>21480</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>21513</arrival>
+          <Quantity>-10930.4563476563</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>43</point>
+          <arrival>21637</arrival>
+          <Quantity>2419.54365234374</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>21748</arrival>
+          <Quantity>-2419.54365234374</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>21</point>
+          <arrival>21949</arrival>
+          <Quantity>8828.1</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>3</point>
+          <arrival>22118</arrival>
+          <Quantity>630.18</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>44</index>
+      <driver>3</driver>
+      <trailer>0</trailer>
+      <start>22200</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>22233</arrival>
+          <Quantity>-8247.5</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>67</point>
+          <arrival>22353</arrival>
+          <Quantity>8999.99999999999</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>22469</arrival>
+          <Quantity>-8999.99999999999</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>2</point>
+          <arrival>22590</arrival>
+          <Quantity>5334.52300000063</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>50</point>
+          <arrival>22669</arrival>
+          <Quantity>544.8</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>81</point>
+          <arrival>22723</arrival>
+          <Quantity>641.234857142853</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>47</point>
+          <arrival>22817</arrival>
+          <Quantity>327.300000000001</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>45</index>
+      <driver>0</driver>
+      <trailer>1</trailer>
+      <start>22920</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>22953</arrival>
+          <Quantity>-16310.3323214286</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>26</point>
+          <arrival>23082</arrival>
+          <Quantity>10641.744921875</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>23210</arrival>
+          <Quantity>-10641.744921875</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>8</point>
+          <arrival>23366</arrival>
+          <Quantity>12687.5828571429</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>46</index>
+      <driver>2</driver>
+      <trailer>2</trailer>
+      <start>22920</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>22953</arrival>
+          <Quantity>-9458.28</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>5</point>
+          <arrival>23081</arrival>
+          <Quantity>13350</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>23207</arrival>
+          <Quantity>-13350</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>12</point>
+          <arrival>23325</arrival>
+          <Quantity>11973.3271972655</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>23438</arrival>
+          <Quantity>-11973.3271972655</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>62</point>
+          <arrival>23517</arrival>
+          <Quantity>1934.00571428572</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>47</index>
+      <driver>3</driver>
+      <trailer>0</trailer>
+      <start>23640</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>23673</arrival>
+          <Quantity>-6847.85785714348</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>13</point>
+          <arrival>23804</arrival>
+          <Quantity>2754.89999999999</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>23917</arrival>
+          <Quantity>-2754.89999999999</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>23</point>
+          <arrival>24032</arrival>
+          <Quantity>6983.025</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>24132</arrival>
+          <Quantity>-6983.025</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>93</point>
+          <arrival>24231</arrival>
+          <Quantity>9000</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>48</index>
+      <driver>0</driver>
+      <trailer>1</trailer>
+      <start>24360</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>24393</arrival>
+          <Quantity>-12687.5828571429</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>4</point>
+          <arrival>24492</arrival>
+          <Quantity>22568.7</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>24592</arrival>
+          <Quantity>-22568.7</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>83</point>
+          <arrival>24727</arrival>
+          <Quantity>22860</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>24859</arrival>
+          <Quantity>-22860</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>93</point>
+          <arrival>24958</arrival>
+          <Quantity>2796.00000000026</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>49</index>
+      <driver>2</driver>
+      <trailer>2</trailer>
+      <start>24360</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>45</point>
+          <arrival>24439</arrival>
+          <Quantity>2647.5</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>35</point>
+          <arrival>24518</arrival>
+          <Quantity>6387.14342857143</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>24650</arrival>
+          <Quantity>-10968.6491428571</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>58</point>
+          <arrival>24798</arrival>
+          <Quantity>9530.75624999999</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>52</point>
+          <arrival>24894</arrival>
+          <Quantity>569.799999999993</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>64</point>
+          <arrival>24943</arrival>
+          <Quantity>388.999999999998</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>50</index>
+      <driver>3</driver>
+      <trailer>0</trailer>
+      <start>25080</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>25113</arrival>
+          <Quantity>-9000</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>87</point>
+          <arrival>25231</arrival>
+          <Quantity>929.900000000005</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
           <point>6</point>
-          <arrival>25631</arrival>
-          <Quantity>2748.00000000001</Quantity>
+          <arrival>25416</arrival>
+          <Quantity>4008.1</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>100</point>
+          <arrival>25590</arrival>
+          <Quantity>520</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>65</point>
+          <arrival>25670</arrival>
+          <Quantity>2112.5222857143</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>51</index>
+      <driver>0</driver>
+      <trailer>1</trailer>
+      <start>25800</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>22</point>
+          <arrival>25928</arrival>
+          <Quantity>2690.7</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>26135</arrival>
+          <Quantity>-5486.70000000026</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>33</point>
+          <arrival>26249</arrival>
+          <Quantity>16224.0234285716</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>94</point>
+          <arrival>26360</arrival>
+          <Quantity>2363.4</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>52</index>
+      <driver>2</driver>
+      <trailer>2</trailer>
+      <start>25800</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>25833</arrival>
+          <Quantity>-10489.55625</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>53</point>
+          <arrival>25977</arrival>
+          <Quantity>274.94</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>57</point>
+          <arrival>26088</arrival>
+          <Quantity>613.100000000009</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>95</point>
+          <arrival>26136</arrival>
+          <Quantity>306.56</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>77</point>
+          <arrival>26243</arrival>
+          <Quantity>10.7399999999689</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>71</point>
+          <arrival>26305</arrival>
+          <Quantity>687.210857142855</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>76</point>
+          <arrival>26366</arrival>
+          <Quantity>445.199999999999</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>53</index>
+      <driver>3</driver>
+      <trailer>0</trailer>
+      <start>26520</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>26553</arrival>
+          <Quantity>-7570.5222857143</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>40</point>
+          <arrival>26668</arrival>
+          <Quantity>8999.99999999999</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>26762</arrival>
+          <Quantity>-8999.99999999999</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>38</point>
+          <arrival>26896</arrival>
+          <Quantity>6929.80000000004</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>60</point>
+          <arrival>26974</arrival>
+          <Quantity>515.200000000001</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>86</point>
+          <arrival>27041</arrival>
+          <Quantity>601.579999999995</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>54</index>
+      <driver>3</driver>
+      <trailer>0</trailer>
+      <start>27960</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>27993</arrival>
+          <Quantity>-8046.58000000003</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>73</point>
+          <arrival>28194</arrival>
+          <Quantity>826.840000000014</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>10</point>
+          <arrival>28340</arrival>
+          <Quantity>755.400000000005</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>78</point>
+          <arrival>28477</arrival>
+          <Quantity>446.199999999998</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>55</index>
+      <driver>0</driver>
+      <trailer>1</trailer>
+      <start>30120</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>30252</arrival>
+          <Quantity>-18587.4234285716</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>16</point>
+          <arrival>30380</arrival>
+          <Quantity>7780.89999999991</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>30509</arrival>
+          <Quantity>-7780.89999999991</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>75</point>
+          <arrival>30580</arrival>
+          <Quantity>8198.40000000004</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>90</point>
+          <arrival>30663</arrival>
+          <Quantity>842.600000000007</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>48</point>
+          <arrival>30730</arrival>
+          <Quantity>3389.90000000004</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>56</index>
+      <driver>2</driver>
+      <trailer>2</trailer>
+      <start>30120</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>19</point>
+          <arrival>30198</arrival>
+          <Quantity>298.600000000014</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>15</point>
+          <arrival>30304</arrival>
+          <Quantity>1381.3</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>30397</arrival>
+          <Quantity>-4017.65085714285</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>91</point>
+          <arrival>30584</arrival>
+          <Quantity>8235.49999999998</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>3</point>
+          <arrival>30742</arrival>
+          <Quantity>135.220000000004</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>57</index>
+      <driver>3</driver>
+      <trailer>0</trailer>
+      <start>30840</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>30873</arrival>
+          <Quantity>-2028.44000000002</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>42</point>
+          <arrival>31170</arrival>
+          <Quantity>4149.7</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>99</point>
+          <arrival>31446</arrival>
+          <Quantity>348.539999999989</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>58</index>
+      <driver>0</driver>
+      <trailer>1</trailer>
+      <start>31560</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>31593</arrival>
+          <Quantity>-12430.9000000001</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>27</point>
+          <arrival>31662</arrival>
+          <Quantity>17108.2</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>55</point>
+          <arrival>31853</arrival>
+          <Quantity>1423.6</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>32027</arrival>
+          <Quantity>-18531.8</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>93</point>
+          <arrival>32126</arrival>
+          <Quantity>17097.5</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>59</index>
+      <driver>2</driver>
+      <trailer>2</trailer>
+      <start>31560</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>34</point>
+          <arrival>31678</arrival>
+          <Quantity>1060.16</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>63</point>
+          <arrival>31835</arrival>
+          <Quantity>435.899999999998</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>18</point>
+          <arrival>31883</arrival>
+          <Quantity>1673.4</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>77</point>
+          <arrival>31935</arrival>
+          <Quantity>1060.86</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>31991</arrival>
+          <Quantity>-12601.04</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>98</point>
+          <arrival>32108</arrival>
+          <Quantity>7503.80000000005</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>64</point>
+          <arrival>32165</arrival>
+          <Quantity>665.46</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>60</index>
+      <driver>3</driver>
+      <trailer>0</trailer>
+      <start>32280</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>32313</arrival>
+          <Quantity>-4498.23999999999</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>83</point>
+          <arrival>32448</arrival>
+          <Quantity>2798.24999999932</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>32580</arrival>
+          <Quantity>-2798.24999999932</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>67</point>
+          <arrival>32700</arrival>
+          <Quantity>3471.80000000001</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>47</point>
+          <arrival>32829</arrival>
+          <Quantity>327.700000000003</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>44</point>
+          <arrival>32903</arrival>
+          <Quantity>674.299999999994</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>61</index>
+      <driver>0</driver>
+      <trailer>1</trailer>
+      <start>33000</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>21</point>
+          <arrival>33165</arrival>
+          <Quantity>2299.10000000002</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>6</point>
+          <arrival>33366</arrival>
+          <Quantity>2450.29999999996</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>85</point>
+          <arrival>33634</arrival>
+          <Quantity>584.84</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>62</index>
+      <driver>2</driver>
+      <trailer>2</trailer>
+      <start>33000</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>29</point>
+          <arrival>33092</arrival>
+          <Quantity>781.047999999999</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>97</point>
+          <arrival>33150</arrival>
+          <Quantity>569.599999999999</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>46</point>
+          <arrival>33257</arrival>
+          <Quantity>862.200000000005</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>3</point>
+          <arrival>33364</arrival>
+          <Quantity>86.3999999999969</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>100</point>
+          <arrival>33405</arrival>
+          <Quantity>544</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>33467</arrival>
+          <Quantity>-11012.5080000001</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>4</point>
+          <arrival>33566</arrival>
+          <Quantity>10997.7000000009</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>63</index>
+      <driver>3</driver>
+      <trailer>0</trailer>
+      <start>33720</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>33753</arrival>
+          <Quantity>-4473.80000000001</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>25</point>
+          <arrival>33957</arrival>
+          <Quantity>8999.99999999998</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>34160</arrival>
+          <Quantity>-8999.99999999998</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>28</point>
+          <arrival>34282</arrival>
+          <Quantity>4226.60136662936</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>64</index>
+      <driver>0</driver>
+      <trailer>1</trailer>
+      <start>34440</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>34473</arrival>
+          <Quantity>-22431.74</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>56</point>
+          <arrival>34602</arrival>
+          <Quantity>11788.4359374999</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>34732</arrival>
+          <Quantity>-11788.4359374999</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>83</point>
+          <arrival>34867</arrival>
+          <Quantity>18955.7499999999</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>94</point>
+          <arrival>34972</arrival>
+          <Quantity>2217.50000000001</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>65</index>
+      <driver>2</driver>
+      <trailer>2</trailer>
+      <start>34440</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>34473</arrival>
+          <Quantity>-10997.7000000009</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>37</point>
+          <arrival>34594</arrival>
+          <Quantity>3990.09999999999</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>57</point>
+          <arrival>34647</arrival>
+          <Quantity>1033.00000000001</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>52</point>
+          <arrival>34707</arrival>
+          <Quantity>945.700000000005</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>50</point>
+          <arrival>34752</arrival>
+          <Quantity>791.6</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>32</point>
+          <arrival>34818</arrival>
+          <Quantity>1432.2</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>53</point>
+          <arrival>34935</arrival>
+          <Quantity>990.6</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>3</point>
+          <arrival>35061</arrival>
+          <Quantity>430.2</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>66</index>
+      <driver>3</driver>
+      <trailer>0</trailer>
+      <start>35160</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>69</point>
+          <arrival>35432</arrival>
+          <Quantity>716.300000000003</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>60</point>
+          <arrival>35721</arrival>
+          <Quantity>389.179999999991</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>67</index>
+      <driver>0</driver>
+      <trailer>1</trailer>
+      <start>35880</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>30</point>
+          <arrival>35970</arrival>
+          <Quantity>1686.75</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>36124</arrival>
+          <Quantity>-22860</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>66</point>
+          <arrival>36199</arrival>
+          <Quantity>4478.39999999999</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>22</point>
+          <arrival>36373</arrival>
+          <Quantity>3667.7</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>68</index>
+      <driver>2</driver>
+      <trailer>2</trailer>
+      <start>35880</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>35913</arrival>
+          <Quantity>-9613.40000000001</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>5</point>
+          <arrival>36041</arrival>
+          <Quantity>7875.79999999991</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>36167</arrival>
+          <Quantity>-7875.79999999991</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>96</point>
+          <arrival>36300</arrival>
+          <Quantity>7267.00000000011</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>45</point>
+          <arrival>36482</arrival>
+          <Quantity>1354.09999999997</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>69</index>
+      <driver>3</driver>
+      <trailer>0</trailer>
+      <start>36600</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>36633</arrival>
+          <Quantity>-5332.08136662936</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>13</point>
+          <arrival>36764</arrival>
+          <Quantity>3165.29999999998</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>36877</arrival>
+          <Quantity>-3165.29999999998</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>36</point>
+          <arrival>36994</arrival>
+          <Quantity>3302.59999999997</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>19</point>
+          <arrival>37098</arrival>
+          <Quantity>2154.2</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>95</point>
+          <arrival>37190</arrival>
+          <Quantity>686.600000000011</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>70</index>
+      <driver>3</driver>
+      <trailer>0</trailer>
+      <start>38040</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>38073</arrival>
+          <Quantity>-6143.39999999998</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>94</point>
+          <arrival>38172</arrival>
+          <Quantity>152.200000000006</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>23</point>
+          <arrival>38235</arrival>
+          <Quantity>1479.57500000006</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>15</point>
+          <arrival>38310</arrival>
+          <Quantity>1680.9</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>38403</arrival>
+          <Quantity>-3312.67500000006</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>58</point>
+          <arrival>38551</arrival>
+          <Quantity>9000.00000000001</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>71</index>
+      <driver>0</driver>
+      <trailer>1</trailer>
+      <start>40200</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>40332</arrival>
+          <Quantity>-8146.09999999999</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>27</point>
+          <arrival>40401</arrival>
+          <Quantity>3090.49999999983</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>48</point>
+          <arrival>40478</arrival>
+          <Quantity>1322.09999999987</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>40536</arrival>
+          <Quantity>-4412.5999999997</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>41</point>
+          <arrival>40635</arrival>
+          <Quantity>6339.60000000002</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>90</point>
+          <arrival>40711</arrival>
+          <Quantity>1431.9</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>72</index>
+      <driver>2</driver>
+      <trailer>2</trailer>
+      <start>40200</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>40233</arrival>
+          <Quantity>-8621.10000000008</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>38</point>
+          <arrival>40367</arrival>
+          <Quantity>5073.80000000003</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>40533</arrival>
+          <Quantity>-5073.80000000003</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>2</point>
+          <arrival>40654</arrival>
+          <Quantity>2313.65999999943</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>77</point>
+          <arrival>40748</arrival>
+          <Quantity>694.739999999945</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>18</point>
+          <arrival>40800</arrival>
+          <Quantity>567.000000000006</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>73</index>
+      <driver>3</driver>
+      <trailer>0</trailer>
+      <start>40920</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>40953</arrival>
+          <Quantity>-9000.00000000001</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>68</point>
+          <arrival>41058</arrival>
+          <Quantity>541.21267089838</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>41163</arrival>
+          <Quantity>-541.21267089838</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>92</point>
+          <arrival>41289</arrival>
+          <Quantity>466.152857142831</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>34</point>
+          <arrival>41373</arrival>
+          <Quantity>174.839999999987</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>64</point>
+          <arrival>41453</arrival>
+          <Quantity>129.739999999999</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>100</point>
+          <arrival>41523</arrival>
+          <Quantity>592</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>3</point>
+          <arrival>41558</arrival>
+          <Quantity>596.299999999996</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>74</index>
+      <driver>0</driver>
+      <trailer>1</trailer>
+      <start>41640</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>10</point>
+          <arrival>41886</arrival>
+          <Quantity>484.200000000008</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>6</point>
+          <arrival>42155</arrival>
+          <Quantity>892.49999999992</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>75</index>
+      <driver>2</driver>
+      <trailer>2</trailer>
+      <start>41640</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>41673</arrival>
+          <Quantity>-3575.39999999938</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>40</point>
+          <arrival>41788</arrival>
+          <Quantity>860.399999999994</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>41882</arrival>
+          <Quantity>-860.399999999994</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>93</point>
+          <arrival>41981</arrival>
+          <Quantity>3840.40000000062</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>42081</arrival>
+          <Quantity>-3840.40000000062</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>9</point>
+          <arrival>42199</arrival>
+          <Quantity>3117.89999999999</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>76</index>
+      <driver>3</driver>
+      <trailer>0</trailer>
+      <start>42360</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>42393</arrival>
+          <Quantity>-1959.03285714281</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>83</point>
+          <arrival>42528</arrival>
+          <Quantity>8999.99999999996</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>42660</arrival>
+          <Quantity>-8999.99999999996</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>45</point>
+          <arrival>42774</arrival>
+          <Quantity>1758.8</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>81</point>
+          <arrival>42808</arrival>
+          <Quantity>314.400000000001</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>76</point>
+          <arrival>42876</arrival>
+          <Quantity>198.300000000001</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>47</point>
+          <arrival>42968</arrival>
+          <Quantity>313.200000000003</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>77</index>
+      <driver>0</driver>
+      <trailer>1</trailer>
+      <start>43080</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>43113</arrival>
+          <Quantity>-9148.19999999995</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>16</point>
+          <arrival>43241</arrival>
+          <Quantity>8890.60000000013</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>43370</arrival>
+          <Quantity>-8890.60000000013</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>8</point>
+          <arrival>43526</arrival>
+          <Quantity>1201.5</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>94</point>
+          <arrival>43697</arrival>
+          <Quantity>1751.2</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>78</index>
+      <driver>2</driver>
+      <trailer>2</trailer>
+      <start>43080</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>78</point>
+          <arrival>43227</arrival>
+          <Quantity>235.800000000001</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>43379</arrival>
+          <Quantity>-3353.69999999999</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>21</point>
+          <arrival>43580</arrival>
+          <Quantity>3791.50000000009</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>79</index>
+      <driver>3</driver>
+      <trailer>0</trailer>
+      <start>43800</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>43833</arrival>
+          <Quantity>-2584.70000000001</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>67</point>
+          <arrival>43953</arrival>
+          <Quantity>4165.49999999996</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>44069</arrival>
+          <Quantity>-4165.49999999996</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>35</point>
+          <arrival>44214</arrival>
+          <Quantity>152.075000000032</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>70</point>
+          <arrival>44304</arrival>
+          <Quantity>2931</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>80</index>
+      <driver>0</driver>
+      <trailer>1</trailer>
+      <start>44520</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>44553</arrival>
+          <Quantity>-2952.7</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>25</point>
+          <arrival>44757</arrival>
+          <Quantity>4626.70000000011</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>44960</arrival>
+          <Quantity>-4626.70000000011</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>82</point>
+          <arrival>45059</arrival>
+          <Quantity>22860</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>81</index>
+      <driver>2</driver>
+      <trailer>2</trailer>
+      <start>44520</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>44553</arrival>
+          <Quantity>-3791.50000000009</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>82</point>
+          <arrival>44652</arrival>
+          <Quantity>13350</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>44752</arrival>
+          <Quantity>-13350</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>82</point>
+          <arrival>44851</arrival>
+          <Quantity>13350</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>44951</arrival>
+          <Quantity>-13350</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>82</point>
+          <arrival>45050</arrival>
+          <Quantity>13350.0000000001</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>82</index>
+      <driver>3</driver>
+      <trailer>0</trailer>
+      <start>45240</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>45273</arrival>
+          <Quantity>-3083.07500000003</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>88</point>
+          <arrival>45389</arrival>
+          <Quantity>1208.5</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>45486</arrival>
+          <Quantity>-1208.5</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>82</point>
+          <arrival>45585</arrival>
+          <Quantity>9000.00000000003</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>45685</arrival>
+          <Quantity>-9000.00000000003</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>82</point>
+          <arrival>45784</arrival>
+          <Quantity>8999.99999999999</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>83</index>
+      <driver>0</driver>
+      <trailer>1</trailer>
+      <start>45960</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>45993</arrival>
+          <Quantity>-22860</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>82</point>
+          <arrival>46092</arrival>
+          <Quantity>18106.233200002</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>46192</arrival>
+          <Quantity>-18106.233200002</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>24</point>
+          <arrival>46382</arrival>
+          <Quantity>7327.5</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>24</point>
+          <arrival>46427</arrival>
+          <Quantity>3454.88014285719</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>84</index>
+      <driver>2</driver>
+      <trailer>2</trailer>
+      <start>45960</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>45993</arrival>
+          <Quantity>-13350.0000000001</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>11</point>
+          <arrival>46298</arrival>
+          <Quantity>13349.9999999999</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>85</index>
+      <driver>3</driver>
+      <trailer>0</trailer>
+      <start>46680</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>46713</arrival>
+          <Quantity>-8999.99999999999</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>11</point>
+          <arrival>47018</arrival>
+          <Quantity>9000</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+      </operations>
+    </IRP_Roadef_Challenge_Shift_>
+    <IRP_Roadef_Challenge_Shift_>
+      <index>86</index>
+      <driver>3</driver>
+      <trailer>0</trailer>
+      <start>48120</start>
+      <operations>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>1</point>
+          <arrival>48153</arrival>
+          <Quantity>-9000</Quantity>
+        </IRP_Roadef_Challenge_Operation_>
+        <IRP_Roadef_Challenge_Operation_>
+          <point>11</point>
+          <arrival>48458</arrival>
+          <Quantity>6535.88500000024</Quantity>
         </IRP_Roadef_Challenge_Operation_>
       </operations>
     </IRP_Roadef_Challenge_Shift_>

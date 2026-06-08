@@ -72,15 +72,20 @@ def select_shifts_with_highs(
     # Variables: x_s is binary, 1 if candidate shift s is selected
     x_indices = []
     
-    ml_prizes = {}
+    ml_prizes_by_day: dict[int, dict[int, float]] = {}
+    ml_prizes_flat: dict[int, float] = {}
     if ml_priors is not None:
-        from .ml_priors import get_start_inventories
-        current_inventories = get_start_inventories(instance, prefix, start_day)
-        ml_prizes = ml_priors.predict_prizes(instance, current_inventories, start_day)
+        ml_prizes_by_day = ml_priors.predict_prizes_by_day(
+            instance, prefix, start_day, end_day,
+        )
+        # Flat fallback: max prize across all days (used for candidate gen steering)
+        for day_prizes in ml_prizes_by_day.values():
+            for cid, prize in day_prizes.items():
+                ml_prizes_flat[cid] = max(ml_prizes_flat.get(cid, 0.0), prize)
 
     pressure_by_customer = (
         _inventory_pressure_by_customer(instance, prefix, start_day, end_day)
-        if pressure_pricing and not ml_prizes
+        if pressure_pricing and not ml_prizes_flat
         else {}
     )
     for i, s in enumerate(candidates):
@@ -98,15 +103,19 @@ def select_shifts_with_highs(
             and instance.customer_by_point[op.point].orders
         )
         
-        if ml_prizes:
+        if ml_prizes_by_day:
             phase = selector_config.selector_phase
             if phase == "auto":
                 phase = "feasibility"
             shift_penalty = 1_000.0 if phase == "feasibility" else 10_000.0
+            # Phase 2: use the prize for the day this shift operates on
+            shift_day = min(s.start // 1440, end_day - 1)
+            shift_day = max(shift_day, start_day)
+            day_prizes = ml_prizes_by_day.get(shift_day, ml_prizes_flat)
             obj_coeff = (
                 (0.05 * travel_cost if phase == "feasibility" else travel_cost)
                 + shift_penalty
-                - sum(ml_prizes.get(c, 0.0) for c in served_customers)
+                - sum(day_prizes.get(c, 0.0) for c in served_customers)
             )
             if i in selector_config.priority_shift_indices:
                 obj_coeff -= selector_config.priority_shift_bonus

@@ -12,12 +12,16 @@ from ..model import Instance, Shift, Solution
 from ..highs_repair import repair_quantities_with_highs
 from ..highs_time_opt import optimize_solution_times
 from ..route_cache import RouteCache
+from ..rules import derive_solution
 from .ml_priors import MLRoutePriors
 from .highs_selector import (
     SelectorConfig,
     _candidate_pressure_bonus,
     _inventory_pressure_by_customer,
+    _inventory_checkpoint_steps,
     select_shifts_with_highs,
+    _candidate_intervals,
+    _intervals_overlap,
 )
 from .pressure import pressure_points
 from .route_priors import RoutePriorDiagnostics, route_signature
@@ -69,10 +73,11 @@ class ColumnLoopConfig:
     candidate_cache_dir: str | None = None
     bucket_anchor_cap: int = 80
     bucket_resource_time_cap: int = 12
-    bucket_route_signature_cap: int = 1
+    bucket_route_signature_cap: int = 8
     bucket_source_region_cap: int = 240
     protect_exact_prior_quantities: bool = False
     use_prior_incumbent: bool = True
+    cap_new_candidate_quantities: bool = True
 
 
 @dataclass(frozen=True)
@@ -183,14 +188,26 @@ def column_generation_rescue(
 
     current = best_solution
     current_score = best_score
+    no_improvement_streak = 0
     for iteration in range(config.iterations):
         pressure_customers = _pressure_customers(instance, current, config)
+        # Phase 3: Augment pressure list with ML-predicted high-priority customers
+        if ml_priors is not None:
+            pressure_customers = _augment_with_ml_priorities(
+                instance, current, config, ml_priors, pressure_customers,
+            )
+        # Use current solution as the generation baseline after the first
+        # iteration so that breach times, trailer loads, and inventory states
+        # evolve between iterations, producing genuinely new candidates.
+        generation_baseline = fixed_prefix if iteration == 0 else current
         generated = _cached_generate_priced_batches(
             instance,
-            fixed_prefix,
+            generation_baseline,
             pressure_customers,
             config,
         )
+        # Filter out candidates that conflict with the fixed prefix shifts
+        generated = _filter_prefix_conflicts(instance, fixed_prefix, generated)
         pressure = _inventory_pressure_by_customer(
             instance,
             fixed_prefix,
@@ -198,14 +215,22 @@ def column_generation_rescue(
             config.end_day,
         )
         generated = _top_diverse_columns(instance, generated, pressure, config)
-        
+
+        # Cap delivery quantities for new candidates to avoid causing downstream
+        # overfill when combined with existing baseline window deliveries.
+        if config.cap_new_candidate_quantities:
+            budgets = _safe_delivery_budgets(
+                instance, fixed_prefix, baseline_window,
+                config.replace_from_day, config.end_day,
+            )
+            generated = _apply_delivery_budgets(instance, generated, budgets)
+
         prev_pool_size = len(pool)
         pool = _dedupe_reindex([*pool, *generated])
         
-        if len(pool) == prev_pool_size and iteration > 0:
-            # Convergence: no new unique columns were added to the pool.
-            # We skip breaking on iteration 0 to ensure at least one full
-            # pass evaluates the newly generated columns.
+        if len(pool) == prev_pool_size and no_improvement_streak >= 2:
+            # Convergence: pool has stopped growing AND score hasn't improved
+            # for 2 consecutive iterations — genuinely stuck.
             break
 
         selected = select_shifts_with_highs(
@@ -275,6 +300,9 @@ def column_generation_rescue(
         if _score_key(score) < _score_key(best_score):
             best_score = score
             best_solution = current
+            no_improvement_streak = 0
+        else:
+            no_improvement_streak += 1
 
         logistic_ratio = score.scored_estimated_cost / max(1.0, score.scored_delivered_quantity)
         min_commit_doi, vuln_commit = get_vulnerabilities(instance, current, config.commit_end_day)
@@ -386,6 +414,50 @@ def _pressure_customers(
     return ordered[: config.max_pressure_customers]
 
 
+def _augment_with_ml_priorities(
+    instance: Instance,
+    solution: Solution,
+    config: ColumnLoopConfig,
+    ml_priors: MLRoutePriors,
+    pressure_customers: list[int],
+) -> list[int]:
+    """Augment pressure customer list with ML-predicted high-priority customers.
+
+    Phase 3: Ensures the candidate pool contains shifts for customers the ML
+    model predicts are critical, even if they haven't technically breached yet.
+    """
+    from .ml_priors import get_start_inventories
+
+    existing = set(pressure_customers)
+    # Compute max prize across all days in the window
+    prizes_by_day = ml_priors.predict_prizes_by_day(
+        instance, solution, config.replace_from_day, config.end_day,
+    )
+    max_prizes: dict[int, float] = {}
+    for day_prizes in prizes_by_day.values():
+        for cid, prize in day_prizes.items():
+            max_prizes[cid] = max(max_prizes.get(cid, 0.0), prize)
+
+    # Sort by descending max prize, take top-K not already in the list
+    ml_ranked = sorted(max_prizes, key=lambda c: max_prizes[c], reverse=True)
+    # Add up to half the pressure cap as ML-suggested customers
+    ml_budget = max(1, config.max_pressure_customers // 2)
+    augmented = list(pressure_customers)
+    for cid in ml_ranked:
+        if cid in existing:
+            continue
+        customer = instance.customer_by_point.get(cid)
+        if customer is None or customer.call_in:
+            continue
+        augmented.append(cid)
+        existing.add(cid)
+        ml_budget -= 1
+        if ml_budget <= 0:
+            break
+
+    return augmented
+
+
 def _generate_priced_batches(
     instance: Instance,
     prefix: Solution,
@@ -454,6 +526,50 @@ def _anchor_batch(
     return [anchor, *neighbors]
 
 
+def _filter_prefix_conflicts(
+    instance: Instance,
+    prefix: Solution,
+    candidates: list[Shift],
+) -> list[Shift]:
+    if not candidates:
+        return []
+    intervals = _candidate_intervals(instance, candidates)
+    prefix_derived = derive_solution(instance, prefix)
+    prefix_driver = {}
+    prefix_trailer = {}
+    for derived in prefix_derived:
+        prefix_driver.setdefault(derived.shift.driver, []).append(
+            (derived.shift.start, derived.end)
+        )
+        prefix_trailer.setdefault(derived.shift.trailer, []).append(
+            (derived.shift.start, derived.end)
+        )
+        
+    filtered = []
+    for i, candidate in enumerate(candidates):
+        start, end = intervals[i]
+        driver = instance.drivers[candidate.driver]
+        conflicts = False
+        
+        for prefix_start, prefix_end in prefix_driver.get(candidate.driver, []):
+            left_end = end + driver.min_inter_shift_duration
+            right_end = prefix_end + driver.min_inter_shift_duration
+            if _intervals_overlap(start, left_end, prefix_start, right_end):
+                conflicts = True
+                break
+                
+        if not conflicts:
+            for prefix_start, prefix_end in prefix_trailer.get(candidate.trailer, []):
+                if _intervals_overlap(start, end, prefix_start, prefix_end):
+                    conflicts = True
+                    break
+                    
+        if not conflicts:
+            filtered.append(candidate)
+            
+    return filtered
+
+
 def _top_diverse_columns(
     instance: Instance,
     candidates: list[Shift],
@@ -473,7 +589,7 @@ def _top_diverse_columns(
     seen_routes: set[tuple[int, ...]] = set()
     bucket_counts: dict[tuple[int, int, int], int] = {}
     anchor_counts: dict[int, int] = {}
-    route_signature_counts: dict[tuple[int, ...], int] = {}
+    route_signature_counts: dict[tuple[tuple[int, ...], int, int], int] = {}
     source_region_counts: dict[int, int] = {}
     for shift in ranked:
         customers = _served_customers(instance, shift)
@@ -485,19 +601,20 @@ def _top_diverse_columns(
         bucket = (shift.driver, shift.trailer, shift.start // 240)
         anchor = customers[0]
         source_region = _first_source_region(instance, shift)
-        route_signature_counts[tuple(customers)] = route_signature_counts.get(tuple(customers), 0)
+        sig_key = (tuple(customers), shift.driver, shift.trailer)
+        route_signature_counts[sig_key] = route_signature_counts.get(sig_key, 0)
         if bucket_counts.get(bucket, 0) >= config.bucket_resource_time_cap:
             continue
         if anchor_counts.get(anchor, 0) >= config.bucket_anchor_cap:
             continue
-        if route_signature_counts.get(tuple(customers), 0) >= config.bucket_route_signature_cap:
+        if route_signature_counts.get(sig_key, 0) >= config.bucket_route_signature_cap:
             continue
         if source_region_counts.get(source_region, 0) >= config.bucket_source_region_cap:
             continue
         seen_routes.add(route_key)
         bucket_counts[bucket] = bucket_counts.get(bucket, 0) + 1
         anchor_counts[anchor] = anchor_counts.get(anchor, 0) + 1
-        route_signature_counts[tuple(customers)] += 1
+        route_signature_counts[sig_key] += 1
         source_region_counts[source_region] = source_region_counts.get(source_region, 0) + 1
         selected.append(shift)
         if len(selected) >= config.max_candidates_per_iteration:
@@ -721,3 +838,119 @@ def _first_source_region(instance: Instance, shift: Shift) -> int:
         return -1
     first_customer = _served_customers(instance, shift)[0]
     return min(instance.sources, key=lambda source: instance.time_matrix[source.index][first_customer]).index if instance.sources else -1
+
+_BUDGET_EPSILON = 1e-6
+
+
+def _safe_delivery_budgets(
+    instance: Instance,
+    prefix: Solution,
+    baseline_window: list,
+    replace_from_day: int,
+    end_day: int,
+) -> dict:
+    """Compute the maximum *extra* quantity a new candidate can deliver to each
+    customer without causing tank overfill at any inventory checkpoint, given
+    the deliveries already committed by the baseline window shifts.
+
+    Returns: customer_index -> max_extra_quantity (float, possibly inf)
+    """
+    events = list(tank_events(instance, prefix))
+    events_by_cust_step = {(e.point, e.step): e for e in events}
+    checkpoint_steps = _inventory_checkpoint_steps(
+        instance, events, replace_from_day, end_day
+    )
+
+    # Collect baseline window deliveries: customer -> [(arrival_step, qty)]
+    baseline_by_cust: dict = {}
+    for shift in baseline_window:
+        for op in shift.operations:
+            if op.quantity <= _BUDGET_EPSILON:
+                continue
+            cust = instance.customer_by_point.get(op.point)
+            if cust is None or cust.call_in:
+                continue
+            arrival_step = min(
+                max(op.arrival // instance.unit, 0), instance.horizon - 1
+            )
+            baseline_by_cust.setdefault(cust.index, []).append(
+                (arrival_step, op.quantity)
+            )
+
+    budgets: dict = {}
+    for customer in instance.customers:
+        if customer.call_in:
+            continue
+        steps = checkpoint_steps.get(customer.index, ())
+        if not steps:
+            budgets[customer.index] = float("inf")
+            continue
+
+        baseline_deliveries = baseline_by_cust.get(customer.index, [])
+        min_budget = float("inf")
+        for step in steps:
+            event = events_by_cust_step.get((customer.index, step))
+            if event is None:
+                continue
+            prefix_inv = event.ending_inventory
+            rhs_upper = customer.capacity - prefix_inv  # max cumulative window delivery
+            baseline_cum = sum(
+                qty for arr_step, qty in baseline_deliveries if arr_step <= step
+            )
+            budget = rhs_upper - baseline_cum
+            if budget < min_budget:
+                min_budget = budget
+
+        budgets[customer.index] = (
+            max(0.0, min_budget) if min_budget < float("inf") else float("inf")
+        )
+
+    return budgets
+
+
+def _apply_delivery_budgets(
+    instance: Instance,
+    candidates: list,
+    budgets: dict,
+) -> list:
+    """Cap delivery quantities in *candidates* so that no customer's budget is
+    exceeded.  Candidates whose meaningful deliveries all collapse to zero are
+    dropped entirely.
+    """
+    result: list = []
+    for shift in candidates:
+        new_ops: list = []
+        changed = False
+        for op in shift.operations:
+            if op.quantity <= _BUDGET_EPSILON:
+                new_ops.append(op)
+                continue
+            cust = instance.customer_by_point.get(op.point)
+            if cust is None:
+                new_ops.append(op)
+                continue
+            budget = budgets.get(cust.index, float("inf"))
+            if budget < op.quantity - _BUDGET_EPSILON:
+                capped = max(0.0, budget)
+                # Drop sub-minimum deliveries rather than leave a token amount
+                if capped < cust.min_operation_quantity - _BUDGET_EPSILON:
+                    capped = 0.0
+                new_ops.append(replace(op, quantity=capped))
+                changed = True
+            else:
+                new_ops.append(op)
+
+        if not changed:
+            result.append(shift)
+            continue
+
+        # Keep the candidate only when at least one meaningful delivery remains
+        has_delivery = any(
+            op.quantity > _BUDGET_EPSILON
+            and op.point in instance.customer_by_point
+            for op in new_ops
+        )
+        if has_delivery:
+            result.append(replace(shift, operations=tuple(new_ops)))
+
+    return result

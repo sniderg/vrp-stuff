@@ -21,6 +21,31 @@ def _derive_single_shift(instance: Instance, shift: Shift):
     return derive_solution(instance, Solution(shifts=(shift,)))[0]
 
 
+def _window_arrival_samples(
+    min_arrival: int,
+    max_arrival: int,
+    count: int,
+) -> list[int]:
+    """Generate `count` evenly-spaced arrival times within [min_arrival, max_arrival].
+
+    Always includes the endpoints. When count == 1 returns just max_arrival.
+    This restores the iteration-to-iteration diversity that lets the CG loop
+    grow its column pool across iterations (as opposed to hardcoded min/max/mid
+    which produces identical candidates on every iteration).
+    """
+    if count <= 1:
+        return [max_arrival]
+    span = max_arrival - min_arrival
+    if span <= 0:
+        return [min_arrival]
+    return sorted(
+        {
+            min_arrival + round(span * i / (count - 1))
+            for i in range(count)
+        }
+    )
+
+
 
 @dataclass(frozen=True)
 class RescueConfig:
@@ -259,10 +284,9 @@ def generate_rescue_candidates(
                     min_arrival = max(start_minute + route_to_customer, window.start + route_to_customer)
                     max_arrival = min(latest_customer_arrival, window.end - trail_time)
                     if min_arrival <= max_arrival:
-                        target_arrivals.append(min_arrival)
-                        target_arrivals.append(max_arrival)
-                        if max_arrival - min_arrival > 120:
-                            target_arrivals.append((min_arrival + max_arrival) // 2)
+                        target_arrivals.extend(
+                            _window_arrival_samples(min_arrival, max_arrival, config.samples_per_customer)
+                        )
                 
                 target_arrivals = sorted(list(set(target_arrivals)))
                 
@@ -394,10 +418,9 @@ def generate_carryover_rescue_candidates(
                     min_arrival = max(start_minute + lead_time, window.start + lead_time)
                     max_arrival = min(latest_arrival, window.end - trail_time)
                     if min_arrival <= max_arrival:
-                        target_arrivals.append(min_arrival)
-                        target_arrivals.append(max_arrival)
-                        if max_arrival - min_arrival > 120:
-                            target_arrivals.append((min_arrival + max_arrival) // 2)
+                        target_arrivals.extend(
+                            _window_arrival_samples(min_arrival, max_arrival, config.samples_per_customer)
+                        )
                 
                 target_arrivals = sorted(list(set(target_arrivals)))
                 
@@ -527,10 +550,9 @@ def generate_chain_rescue_candidates(
                     min_arrival = max(start_minute + lead_to_anchor, window.start + lead_to_anchor)
                     max_arrival = min(latest_anchor_arrival, window.end - trail_time)
                     if min_arrival <= max_arrival:
-                        target_arrivals.append(min_arrival)
-                        target_arrivals.append(max_arrival)
-                        if max_arrival - min_arrival > 120:
-                            target_arrivals.append((min_arrival + max_arrival) // 2)
+                        target_arrivals.extend(
+                            _window_arrival_samples(min_arrival, max_arrival, config.samples_per_customer)
+                        )
                 
                 target_arrivals = sorted(list(set(target_arrivals)))
                 
@@ -644,10 +666,9 @@ def generate_multi_reload_candidates(
                     min_arrival = max(start_minute + lead_to_anchor, window.start + lead_to_anchor)
                     max_arrival = min(latest_anchor_arrival, window.end - trail_time)
                     if min_arrival <= max_arrival:
-                        target_arrivals.append(min_arrival)
-                        target_arrivals.append(max_arrival)
-                        if max_arrival - min_arrival > 120:
-                            target_arrivals.append((min_arrival + max_arrival) // 2)
+                        target_arrivals.extend(
+                            _window_arrival_samples(min_arrival, max_arrival, config.samples_per_customer)
+                        )
                 
                 target_arrivals = sorted(list(set(target_arrivals)))
                 
@@ -746,10 +767,9 @@ def generate_multi_reload_candidates(
                     min_arrival = max(start_minute + lead_to_anchor, window.start + lead_to_anchor)
                     max_arrival = min(latest_anchor_arrival, window.end - trail_time)
                     if min_arrival <= max_arrival:
-                        target_arrivals.append(min_arrival)
-                        target_arrivals.append(max_arrival)
-                        if max_arrival - min_arrival > 120:
-                            target_arrivals.append((min_arrival + max_arrival) // 2)
+                        target_arrivals.extend(
+                            _window_arrival_samples(min_arrival, max_arrival, config.samples_per_customer)
+                        )
                 
                 target_arrivals = sorted(list(set(target_arrivals)))
                 

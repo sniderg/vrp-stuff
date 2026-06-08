@@ -1,11 +1,54 @@
 {
   "weights": {
-    "inv_ratio": -224.7244030622693,
-    "safety_ratio": 292.2825,
-    "doi": -877.5836805555549,
-    "avg_demand": -505.64892857142866,
-    "distance_depot": -9208.850000000002,
-    "distance_source": -8955.0
+    "inv_ratio": -202.4440946405383,
+    "safety_ratio": 299.38977126182425,
+    "doi": -499.8909258320437,
+    "avg_demand": -0.22027251855853525,
+    "distance_depot": -0.14606883581880054,
+    "distance_source": -0.5332964688897153,
+    "forecast_slope": 199.92568783217322,
+    "demand_variance": 50.14382368979226,
+    "tw_tightness": 300.54457749596764,
+    "n_allowed_trailers": -50.50137764760752,
+    "cluster_accessibility": 0.029508443242108648,
+    "capacity_headroom": -199.38977126182402,
+    "has_orders": 500.0,
+    "inv_x_doi": -100.65523501233106,
+    "dist_x_demand": -0.7009359076198395
   },
-  "bias": 945.7499999999999
+  "bias": 995.9872956512804,
+  "feature_means": {
+    "inv_ratio": 0.6330220175622994,
+    "safety_ratio": 0.1741745375234905,
+    "doi": 8.914467654585438,
+    "avg_demand": 21.169809073209574,
+    "distance_depot": 134.79164434922336,
+    "distance_source": 129.9475093733262,
+    "forecast_slope": 0.0009740351990567254,
+    "demand_variance": 0.44103525320469356,
+    "tw_tightness": 0.3547328655172141,
+    "n_allowed_trailers": 0.7730048205677267,
+    "cluster_accessibility": 27.668987680771465,
+    "capacity_headroom": 0.8258254624765141,
+    "has_orders": 0.0,
+    "inv_x_doi": 6.11769661698921,
+    "dist_x_demand": 2411.837855568938
+  },
+  "feature_stds": {
+    "inv_ratio": 0.21476602407735423,
+    "safety_ratio": 0.09732390193150632,
+    "doi": 7.432809774312812,
+    "avg_demand": 49.1444792123217,
+    "distance_depot": 93.50331447442514,
+    "distance_source": 94.10231259732188,
+    "forecast_slope": 0.3968234795477672,
+    "demand_variance": 0.4490474836858126,
+    "tw_tightness": 0.3070034277339309,
+    "n_allowed_trailers": 0.2926183226451951,
+    "cluster_accessibility": 28.623118466701566,
+    "capacity_headroom": 0.09732390193150632,
+    "has_orders": 0.0,
+    "inv_x_doi": 6.143824264566601,
+    "dist_x_demand": 5422.228194185157
+  }
 }
